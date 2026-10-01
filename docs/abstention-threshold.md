@@ -49,3 +49,16 @@ questions this is a coarse estimate; the test split measures it out of sample.
 - **Pre-registered for the secondary test analysis** (written before any test-split result
   existed): simulated gate at **2.65**, the midpoint of the dev gap between 2.44 and 2.85.
   Reproduce with `rag gate-analysis <test-run-dir> --threshold 2.65`.
+
+## Out-of-sample check on test (secondary analysis)
+
+Run `run-8726a14b6f`, `hybrid_rerank`, 80 test questions, gate fixed at 2.65 in advance:
+
+| | Correct abstention (n=23) | False abstention (n=57) |
+|---|---|---|
+| Model only (shipped) | 100.0% | 10.5% |
+| Simulated gate < 2.65 | 100.0% | 12.3% |
+
+The dev separation did not hold: on test, 6 should-decline questions had a top reranker score
+above 2.65 and one answerable question scored 2.59. The gate would have added a false
+abstention and caught nothing the model did not already decline, which supports leaving it off.

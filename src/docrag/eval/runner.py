@@ -49,9 +49,18 @@ class EvalConfig(BaseModel):
     name: str
     mode: RetrievalMode
     citation_check: bool = True
+    prompt_version: str | None = None  # None = the pipeline's configured answer prompt
 
 
 DEFAULT_CONFIGS = [
+    # Naive RAG end to end: dense top-k + a generic "use the context" prompt, no grounding
+    # rules and no citation check. Measures what the generation-side safeguards buy.
+    EvalConfig(
+        name="naive_rag",
+        mode=RetrievalMode.DENSE,
+        citation_check=False,
+        prompt_version="answer_naive",
+    ),
     EvalConfig(name="baseline_dense", mode=RetrievalMode.DENSE),
     EvalConfig(name="hybrid", mode=RetrievalMode.HYBRID),
     EvalConfig(name="hybrid_rerank", mode=RetrievalMode.HYBRID_RERANK),
@@ -80,6 +89,7 @@ class Record(BaseModel):
     citation_valid: bool | None
     citation_first_attempt_valid: bool | None
     n_uncited_sentences: int | None = None
+    citations_requested: bool = True  # False for the naive prompt, which asks for none
     n_llm_calls: int
     input_tokens: int
     output_tokens: int
@@ -230,7 +240,14 @@ def run_eval(
             out = run_dir / "records" / f"{ec.name}.jsonl"
             done = _done(out)
             assistant = Assistant(
-                retriever, gen_llm, gcfg.model_copy(update={"citation_check": ec.citation_check})
+                retriever,
+                gen_llm,
+                gcfg.model_copy(
+                    update={
+                        "citation_check": ec.citation_check,
+                        "prompt_version": ec.prompt_version or gcfg.prompt_version,
+                    }
+                ),
             )
             todo = [q for q in questions if q.id not in done]
             log(f"[{ec.name}] {len(done)} done, {len(todo)} to go")
@@ -277,6 +294,7 @@ def _answer_and_judge(
 ) -> Record:
     ans = assistant.answer(q.question, ec.mode)
     rec = _record(q, ec, gold, ans.retrieved, ans)
+    rec.citations_requested = ec.prompt_version is None
     if judge_llm is not None and not ans.abstained:
         jr = judge_answer(
             judge_llm,

@@ -74,7 +74,7 @@ def per_question(r: Record) -> dict[str, float | None]:
         "false_abstention": (1.0 if r.abstained else 0.0) if answerable else None,
         "citation_valid": (
             (1.0 if r.citation_valid else 0.0)
-            if not r.abstained and r.citation_valid is not None
+            if not r.abstained and r.citation_valid is not None and r.citations_requested
             else None
         ),
         "citation_first_try_valid": (
@@ -85,7 +85,7 @@ def per_question(r: Record) -> dict[str, float | None]:
         # Answers in which every claim sentence carries a citation (measured, not enforced).
         "fully_cited": (
             (1.0 if r.n_uncited_sentences == 0 else 0.0)
-            if not r.abstained and r.n_uncited_sentences is not None
+            if not r.abstained and r.n_uncited_sentences is not None and r.citations_requested
             else None
         ),
         "latency_s": r.retrieval_s + r.generation_s,
@@ -200,16 +200,28 @@ def write_report(run_dir: Path, split: str = "test") -> dict[str, dict[str, obje
     recs = load_records(run_dir)
     recs = {k: [r for r in v if split == "all" or r.split == split] for k, v in recs.items()}
     summaries = {name: summarize(rs) for name, rs in recs.items() if rs}
-    comparisons: dict[str, dict[str, object]] = {}
-    if "baseline_dense" in recs:
+    # Paired comparisons of every configuration against each baseline that is present.
+    comparisons: dict[str, dict[str, dict[str, object]]] = {}
+    keys = (
+        "hit@5",
+        "mrr@10",
+        "correctness",
+        "any_unsupported",
+        "correct_abstention",
+        "false_abstention",
+    )
+    for base in ("naive_rag", "baseline_dense"):
+        if base not in recs:
+            continue
+        comparisons[base] = {}
         for name, rs in recs.items():
-            if name == "baseline_dense":
+            if name == base:
                 continue
-            comparisons[name] = {}
-            for key in ("hit@5", "mrr@10", "correctness", "any_unsupported", "correct_abstention"):
-                diff = compare(recs["baseline_dense"], rs, key)
+            comparisons[base][name] = {}
+            for key in keys:
+                diff = compare(recs[base], rs, key)
                 if diff:
-                    comparisons[name][key] = {"diff": diff[0], "ci95": [diff[1], diff[2]]}
+                    comparisons[base][name][key] = {"diff": diff[0], "ci95": [diff[1], diff[2]]}
     (run_dir / "results.json").write_text(
         json.dumps({"split": split, "summaries": summaries, "vs_baseline": comparisons}, indent=2),
         encoding="utf-8",

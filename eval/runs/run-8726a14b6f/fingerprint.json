@@ -1,0 +1,82 @@
+{
+  "questions_sha": "f7b76ce747fa",
+  "corpus_commit": "1c7597d73be0e9a3a4e44aa75b8fb212b40ea136",
+  "chunking": {
+    "max_tokens": 256,
+    "overlap_tokens": 32,
+    "max_code_tokens": 1024,
+    "min_section_tokens": 0,
+    "lead_in_max_tokens": 100
+  },
+  "embedding": {
+    "model": "BAAI/bge-base-en-v1.5",
+    "query_instruction": "Represent this sentence for searching relevant passages: ",
+    "batch_size": 32
+  },
+  "retrieval": {
+    "mode": "hybrid_rerank",
+    "top_k": 5,
+    "dense_candidates": 30,
+    "bm25_candidates": 30,
+    "rrf_k": 60,
+    "rerank_candidates": 20,
+    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-12-v2"
+  },
+  "generation": {
+    "protocol_name": "Uniswap",
+    "prompt_version": "answer_v2",
+    "temperature": 0.0,
+    "max_output_tokens": 1024,
+    "citation_check": true,
+    "max_citation_retries": 1,
+    "require_sentence_coverage": false,
+    "on_violation": "abstain",
+    "min_rerank_score": null
+  },
+  "provider": "cerebras",
+  "generator_model": "qwen-3.8-27b",
+  "generator_reasoning_effort": "none",
+  "judge_model": "gpt-oss-120b",
+  "judge_reasoning_effort": "",
+  "judge_provider": "cerebras",
+  "prompts": {
+    "answer_naive.md": "6290f91015d3",
+    "answer_v1.md": "ba7b335c1454",
+    "answer_v2.md": "d99dbbeff5c0",
+    "judge_v1.md": "5538313b840f",
+    "judge_v2.md": "f48ba34e7b7c"
+  },
+  "configs": [
+    {
+      "name": "naive_rag",
+      "mode": "dense",
+      "citation_check": false,
+      "prompt_version": "answer_naive"
+    },
+    {
+      "name": "baseline_dense",
+      "mode": "dense",
+      "citation_check": true,
+      "prompt_version": null
+    },
+    {
+      "name": "hybrid",
+      "mode": "hybrid",
+      "citation_check": true,
+      "prompt_version": null
+    },
+    {
+      "name": "hybrid_rerank",
+      "mode": "hybrid_rerank",
+      "citation_check": true,
+      "prompt_version": null
+    },
+    {
+      "name": "hybrid_rerank_no_citecheck",
+      "mode": "hybrid_rerank",
+      "citation_check": false,
+      "prompt_version": null
+    }
+  ],
+  "judged": true
+}

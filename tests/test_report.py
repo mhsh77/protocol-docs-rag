@@ -104,3 +104,8 @@ def test_update_readme_block_replaces_only_generated_section(tmp_path) -> None: 
     text = readme.read_text()
     assert "old table" not in text and "| new | table |" in text
     assert text.startswith("# T\n\nintro\n") and text.endswith(f"{README_END}\n\nrest\n")
+
+
+def test_citation_metrics_not_applicable_when_prompt_requests_no_citations() -> None:
+    m = per_question(rec(citation_valid=False, citations_requested=False, n_uncited_sentences=2))
+    assert m["citation_valid"] is None and m["fully_cited"] is None
