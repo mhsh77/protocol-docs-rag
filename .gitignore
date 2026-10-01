@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+
+# Secrets
+.env
+
+# Data: raw docs are re-fetchable at a pinned commit; only the manifest is versioned.
+data/raw/*/**
+!data/raw/*/manifest.jsonl
+data/index/
+data/cache/
+
+# Logs
+logs/
+*.log

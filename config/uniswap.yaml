@@ -1,0 +1,29 @@
+# Corpus + pipeline configuration for the Uniswap developer docs.
+# To point the pipeline at another protocol, copy this file and change the `corpus` block.
+
+corpus:
+  name: uniswap
+  # GitHub repo holding the docs source. Pinned to a commit so every run sees identical text.
+  repo: Uniswap/docs
+  commit: 1c7597d73be0e9a3a4e44aa75b8fb212b40ea136
+  license: MIT
+  # Only files under these prefixes are fetched (repo-relative).
+  include_prefixes:
+    - content/get-started/
+    - content/trading/
+    - content/liquidity/
+    - content/protocols/
+    - content/sdks/
+    - content/uniswap-ai/
+    - content/unichain/
+    - content/ecosystem/
+    - content/community/
+  # Excluded from the corpus: `archive/` (superseded docs), `examples/` (code only),
+  # `changelog/` (time-bound notices that would make the eval date-sensitive).
+  exclude_prefixes: []
+  extensions: [".md", ".mdx"]
+  # How a repo path maps to the published page. `{path}` is the repo path with
+  # `strip_prefix` and the extension removed; a trailing `/index` is dropped.
+  strip_prefix: content/
+  published_url_template: "https://developers.uniswap.org/docs/{path}"
+  license_file: LICENSE
