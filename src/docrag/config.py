@@ -133,10 +133,14 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     groq_api_key: str = ""
     openrouter_api_key: str = ""
+    cerebras_api_key: str = ""
     generator_model: str = ""
     judge_model: str = ""
     # Reasoning effort for the judge when it is a reasoning model ("" = provider default).
     judge_reasoning_effort: str = ""
+    # Optional separate provider for the judge (same model, more free quota). "" = LLM_PROVIDER.
+    judge_provider: str = ""
+    judge_tokens_per_minute: int = 0  # 0 = LLM_TOKENS_PER_MINUTE
     # Client-side throttle, kept under the provider's per-minute limit.
     llm_requests_per_minute: int = 25
     # Rolling-minute token budget (Groq free tier: 8K TPM per model). 0 = unlimited.

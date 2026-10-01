@@ -114,6 +114,7 @@ def run_fingerprint(
         "generator_model": settings.generator_model,
         "judge_model": settings.judge_model,
         "judge_reasoning_effort": settings.judge_reasoning_effort,
+        "judge_provider": settings.judge_provider or settings.llm_provider,
         "prompts": prompts,
         "configs": [c.model_dump(mode="json") for c in configs],
     }
@@ -203,7 +204,13 @@ def run_eval(
     gen_llm = CachedLLM(make_client(settings.generator_model, settings), cache)
     judge_llm = (
         CachedLLM(
-            make_client(settings.judge_model, settings, settings.judge_reasoning_effort or None),
+            make_client(
+                settings.judge_model,
+                settings,
+                settings.judge_reasoning_effort or None,
+                provider=settings.judge_provider or None,
+                tokens_per_minute=settings.judge_tokens_per_minute or None,
+            ),
             cache,
         )
         if judge
