@@ -53,9 +53,10 @@ def draft_questions(
     verifier_model: str = typer.Option("openai/gpt-oss-20b", help="Model for unanswerable checks."),
 ) -> None:
     """Draft eval questions (resumable) into eval/drafts/questions_draft.jsonl."""
+    from docrag.config import RetrievalConfig
     from docrag.eval.build_set import build_drafts
     from docrag.llm import make_client
-    from docrag.retrieval.retriever import RetrievalConfig, Retriever
+    from docrag.retrieval.retriever import Retriever
 
     cfg = load_pipeline_config(config)
     settings = Settings()
@@ -82,6 +83,58 @@ def finalize_questions() -> None:
     qs = finalize(DRAFTS_PATH, QUESTIONS_PATH)
     dev = sum(q.split == "dev" for q in qs)
     typer.echo(f"{len(qs)} questions ({dev} dev / {len(qs) - dev} test) -> {QUESTIONS_PATH.name}")
+
+
+@app.command("eval")
+def eval_cmd(
+    config: Path | None = ConfigOpt,
+    split: str = typer.Option("test", help="test | dev | all"),
+    only: str = typer.Option("", help="Comma-separated config names (default: all four)."),
+) -> None:
+    """Run the full evaluation (resumable) and write the results table."""
+    from docrag.eval.report import write_report
+    from docrag.eval.runner import DEFAULT_CONFIGS, run_eval
+
+    cfg = load_pipeline_config(config)
+    configs = DEFAULT_CONFIGS
+    if only:
+        names = {n.strip() for n in only.split(",")}
+        configs = [c for c in DEFAULT_CONFIGS if c.name in names]
+    run_dir = run_eval(
+        cfg, Settings(), QUESTIONS_PATH, split=split, configs=configs, log=typer.echo
+    )
+    write_report(run_dir, split)
+    typer.echo((run_dir / "results.md").read_text(encoding="utf-8"))
+
+
+@app.command()
+def report(
+    run: Path = typer.Argument(..., help="Run directory, e.g. eval/runs/run-abc123"),
+    split: str = typer.Option("test"),
+    update_readme: bool = typer.Option(False, help="Replace the README results block."),
+) -> None:
+    """Recompute the results table from a run's saved records (no LLM calls)."""
+    from docrag.eval.report import update_readme_block, write_report
+
+    write_report(run, split)
+    table = (run / "results.md").read_text(encoding="utf-8")
+    typer.echo(table)
+    if update_readme:
+        update_readme_block(PROJECT_ROOT / "README.md", table)
+        typer.echo("README results block updated.")
+
+
+@app.command()
+def bot(config: Path | None = ConfigOpt) -> None:
+    """Start the Telegram bot (long polling)."""
+    from docrag.bot.telegram_bot import run
+    from docrag.service import build_service
+
+    cfg = load_pipeline_config(config)
+    settings = Settings()
+    if not settings.telegram_bot_token:
+        raise typer.BadParameter("TELEGRAM_BOT_TOKEN is not set (see .env.example).")
+    run(settings.telegram_bot_token, build_service(cfg, settings), cfg.generation.protocol_name)
 
 
 @app.command()

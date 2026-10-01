@@ -15,6 +15,7 @@ dependencies = [
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
     "python-dotenv>=1.2.4",
+    "python-telegram-bot>=21",
     "pyyaml>=6.0",
     "qdrant-client>=1.19.1",
     "sentence-transformers>=6.1.0",
@@ -71,3 +72,6 @@ torch = { index = "pytorch-cpu" }
 [[tool.mypy.overrides]]
 module = ["bm25s.*", "qdrant_client.*", "sentence_transformers.*"]
 ignore_missing_imports = true
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Argument", "typer.Option"]

@@ -12,7 +12,7 @@ from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
 
-from docrag.config import PipelineConfig
+from docrag.config import PipelineConfig, RetrievalMode
 from docrag.corpus.fetch import MANIFEST_NAME, read_manifest
 from docrag.eval.dataset import (
     Category,
@@ -34,7 +34,7 @@ from docrag.eval.drafting import (
     verify_unanswerable,
 )
 from docrag.llm.base import LLMClient
-from docrag.retrieval.retriever import RetrievalMode, Retriever
+from docrag.retrieval.retriever import Retriever
 
 # (category, subtype) -> target count. Unanswerable >= 20 as required, plus margin.
 TARGETS: dict[tuple[Category, str | None], int] = {

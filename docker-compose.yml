@@ -1,0 +1,39 @@
+# Usage (see docs/deploy.md):
+#   docker compose run --rm setup     # one-off: fetch pinned docs, chunk, embed, index
+#   docker compose up -d bot          # start the Telegram bot
+#   docker compose run --rm eval      # optional: run the evaluation on the server
+#
+# Qdrant runs in embedded (local) mode inside the app and takes a file lock, so `eval` and
+# `bot` must not run at the same time against the same data volume.
+
+x-app: &app
+  build: .
+  image: docrag:latest
+  env_file: .env
+  volumes:
+    - ./data:/app/data      # chunks, indexes, embedding + LLM caches, HF model cache
+    - ./logs:/app/logs      # structured usage logs (JSONL)
+    - ./eval:/app/eval      # questions + run outputs
+
+services:
+  setup:
+    <<: *app
+    profiles: ["setup"]
+    entrypoint: ["sh", "-c", "rag fetch && rag ingest"]
+
+  bot:
+    <<: *app
+    command: ["bot"]
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 3g
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  eval:
+    <<: *app
+    profiles: ["eval"]
+    command: ["eval"]

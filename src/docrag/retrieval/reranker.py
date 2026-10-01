@@ -6,7 +6,7 @@ from functools import cached_property
 
 
 class CrossEncoderReranker:
-    def __init__(self, model: str, max_length: int = 512, batch_size: int = 16) -> None:
+    def __init__(self, model: str, max_length: int = 384, batch_size: int = 16) -> None:
         self.model_name = model
         self.max_length = max_length
         self.batch_size = batch_size

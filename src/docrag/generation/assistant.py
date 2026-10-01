@@ -19,28 +19,11 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from docrag.config import GenerationConfig, RetrievalMode, ViolationPolicy
 from docrag.generation.citations import CitationCheck, check_citations
 from docrag.generation.prompt import ANSWER_SCHEMA, alias, build_prompt, load_template
 from docrag.llm.base import LLMClient, LLMResponse
-from docrag.retrieval.retriever import RetrievalMode, RetrievedChunk, Retriever
-
-
-class ViolationPolicy(StrEnum):
-    FLAG = "flag"  # return the answer, marked citation-invalid
-    ABSTAIN = "abstain"  # replace the answer with an abstention
-
-
-class GenerationConfig(BaseModel):
-    protocol_name: str = "Uniswap"
-    prompt_version: str = "answer_v1"
-    temperature: float = 0.0
-    max_output_tokens: int = 1024
-    citation_check: bool = True
-    max_citation_retries: int = 1
-    on_violation: ViolationPolicy = ViolationPolicy.ABSTAIN
-    # Abstain before calling the LLM when the top reranker score is below this.
-    # None = disabled. Tuned on the dev split only (see docs/abstention-threshold.md).
-    min_rerank_score: float | None = None
+from docrag.retrieval.retriever import RetrievedChunk, Retriever
 
 
 class Citation(BaseModel):

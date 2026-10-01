@@ -14,13 +14,13 @@ import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 
-from docrag.config import PipelineConfig
+from docrag.config import PipelineConfig, RetrievalMode
 from docrag.corpus.fetch import MANIFEST_NAME, ManifestEntry, read_manifest
 from docrag.eval.dataset import Category, EvalQuestion, Evidence, Expected, norm
 from docrag.ingest.chunking import split_sections
 from docrag.ingest.mdx import normalize_mdx
 from docrag.llm.base import LLMClient
-from docrag.retrieval.retriever import RetrievalMode, Retriever
+from docrag.retrieval.retriever import Retriever
 
 _WORDS = lambda t: len(t.split())  # noqa: E731  (token proxy for section sizing)
 _NUMERIC_RE = re.compile(

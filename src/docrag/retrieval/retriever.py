@@ -4,12 +4,11 @@
 from __future__ import annotations
 
 import json
-from enum import StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel
 
-from docrag.config import PipelineConfig, Settings
+from docrag.config import PipelineConfig, RetrievalConfig, RetrievalMode, Settings
 from docrag.ingest.chunking import Chunk
 from docrag.ingest.pipeline import read_chunks
 from docrag.retrieval.embedder import Embedder
@@ -17,22 +16,6 @@ from docrag.retrieval.fusion import reciprocal_rank_fusion
 from docrag.retrieval.lexical import BM25Index
 from docrag.retrieval.reranker import CrossEncoderReranker
 from docrag.retrieval.vector_store import VectorStore
-
-
-class RetrievalMode(StrEnum):
-    DENSE = "dense"
-    HYBRID = "hybrid"
-    HYBRID_RERANK = "hybrid_rerank"
-
-
-class RetrievalConfig(BaseModel):
-    mode: RetrievalMode = RetrievalMode.HYBRID_RERANK
-    top_k: int = 5
-    dense_candidates: int = 30
-    bm25_candidates: int = 30
-    rrf_k: int = 60
-    rerank_candidates: int = 20
-    reranker_model: str = "BAAI/bge-reranker-base"
 
 
 class RetrievedChunk(BaseModel):

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
 from pathlib import Path
 
 import yaml
@@ -47,6 +48,46 @@ class CorpusConfig(BaseModel):
         return f"https://raw.githubusercontent.com/{self.repo}/{self.commit}/{repo_path}"
 
 
+class RetrievalMode(StrEnum):
+    DENSE = "dense"
+    HYBRID = "hybrid"
+    HYBRID_RERANK = "hybrid_rerank"
+
+
+class RetrievalConfig(BaseModel):
+    mode: RetrievalMode = RetrievalMode.HYBRID_RERANK
+    top_k: int = 5
+    dense_candidates: int = 30
+    bm25_candidates: int = 30
+    rrf_k: int = 60
+    rerank_candidates: int = 20
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-12-v2"
+
+
+class ViolationPolicy(StrEnum):
+    FLAG = "flag"  # return the answer, marked citation-invalid
+    ABSTAIN = "abstain"  # replace the answer with an abstention
+
+
+class GenerationConfig(BaseModel):
+    protocol_name: str = "Uniswap"
+    prompt_version: str = "answer_v1"
+    temperature: float = 0.0
+    max_output_tokens: int = 1024
+    citation_check: bool = True
+    max_citation_retries: int = 1
+    on_violation: ViolationPolicy = ViolationPolicy.ABSTAIN
+    # Abstain before calling the LLM when the top reranker score is below this.
+    # None = disabled. Tuned on the dev split only (see docs/abstention-threshold.md).
+    min_rerank_score: float | None = None
+
+
+class RateLimits(BaseModel):
+    per_user_per_minute: int = 4
+    per_user_per_day: int = 30
+    global_per_day: int = 150  # protects the free-tier LLM quota shared by all users
+
+
 class EmbeddingConfig(BaseModel):
     model: str = "BAAI/bge-base-en-v1.5"
     # BGE retrieval models expect this instruction on queries (not on passages).
@@ -58,6 +99,9 @@ class PipelineConfig(BaseModel):
     corpus: CorpusConfig
     chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
     embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
+    retrieval: RetrievalConfig = Field(default_factory=RetrievalConfig)
+    generation: GenerationConfig = Field(default_factory=GenerationConfig)
+    bot_limits: RateLimits = Field(default_factory=RateLimits)
 
     @property
     def raw_dir(self) -> Path:
@@ -93,6 +137,8 @@ class Settings(BaseSettings):
     llm_tokens_per_minute: int = 7500
 
     telegram_bot_token: str = ""
+    # Salt for hashing user ids in usage logs (raw Telegram ids are never written).
+    log_salt: str = "change-me"
 
     @property
     def cache_dir(self) -> Path:

@@ -45,4 +45,18 @@ retrieval:
   bm25_candidates: 30
   rrf_k: 60
   rerank_candidates: 20
-  reranker_model: BAAI/bge-reranker-base
+  reranker_model: cross-encoder/ms-marco-MiniLM-L-12-v2   # see docs/experiments/retrieval.md
+
+generation:
+  protocol_name: Uniswap
+  prompt_version: answer_v1
+  temperature: 0.0
+  citation_check: true
+  max_citation_retries: 1
+  on_violation: abstain        # flag | abstain
+  min_rerank_score: null       # tuned on the dev split only
+
+bot_limits:
+  per_user_per_minute: 4
+  per_user_per_day: 30
+  global_per_day: 150     # keeps the bot inside the free-tier daily LLM token quota

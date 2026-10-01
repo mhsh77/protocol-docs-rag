@@ -5,12 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from docrag.generation.assistant import (
-    AbstainReason,
-    Assistant,
-    GenerationConfig,
-    ViolationPolicy,
-)
+from docrag.config import GenerationConfig, ViolationPolicy
+from docrag.generation.assistant import AbstainReason, Assistant
 from docrag.ingest.chunking import Chunk
 from docrag.llm.base import LLMResponse
 from docrag.retrieval.retriever import RetrievedChunk
