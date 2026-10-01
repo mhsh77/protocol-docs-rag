@@ -44,7 +44,8 @@ class EvalQuestion(BaseModel):
     expected: Expected
     reference_answer: str | None = None
     evidence: list[Evidence] = Field(default_factory=list)
-    source: str = "llm_draft"  # llm_draft | manual
+    source: str = "llm_draft"  # llm_draft | manual | llm_draft+human_edit
+    draft_id: str | None = None  # id in eval/drafts/questions_draft.jsonl (curation key)
     reviewed: bool = False
     notes: str | None = None
 

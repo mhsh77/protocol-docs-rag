@@ -214,7 +214,8 @@ def assign_splits(questions: list[EvalQuestion], seed: int = 11) -> list[EvalQue
         rng.shuffle(g)
         n_dev = round(len(g) * DEV_FRACTION)
         for i, q in enumerate(g):
-            out.append(q.model_copy(update={"split": "dev" if i < n_dev else "test"}))
+            split = "dev" if i < n_dev else "test"
+            out.append(q.model_copy(update={"split": split, "draft_id": q.draft_id or q.id}))
     for i, q in enumerate(out, 1):
         q.id = f"q{i:03d}"
     return out

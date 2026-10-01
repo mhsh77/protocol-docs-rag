@@ -5,7 +5,11 @@
 #   rewrite: new question and/or reference text (evidence quotes are kept and must still match)
 #   recategorize: change category
 #
-# Reviewer: Claude (first pass). The project owner reviews a stratified sample afterwards.
+# Review: done by Claude (an AI), not by a Uniswap domain expert; the project owner is not a
+# DeFi specialist. Every answerable question's reference was checked against the quoted
+# evidence and, where it went beyond the quotes, against the full source page. Every
+# unanswerable question was checked against its top-3 hybrid+rerank retrieval results.
+# This limitation is stated in the README.
 
 drop:
   draft-10: "worked example (filler priority fee), not a protocol fact; meaningless without the example"
@@ -46,6 +50,10 @@ drop:
   draft-135: "incoherent: mixes filler bids with the LP API fee-claim endpoint"
   draft-140: "compiler version of an example hook contract, not a protocol fact"
   draft-147: "incoherent: asks for a gas limit on a subgraph entity"
+  # Full second review (all 112 questions checked against source text and retrieval):
+  draft-65: "'flex fees' is a term the drafter invented, not real outdated terminology"
+  draft-90: "partly answerable: the docs say the template ships one example hook (Counter.sol)"
+  draft-136: "partly answerable: the docs say DutchV3 decay lasts about one minute"
 
 rewrite:
   draft-7:
@@ -62,6 +70,8 @@ rewrite:
     question: "In the Trading API proxy approval flow, why does the proxy contract have a different address on every network?"
   draft-61:
     question: "Older Uniswap docs talked about 'exchange contracts' that held liquidity and executed swaps. What are they called in the current protocol?"
+  draft-143:
+    reference: "The premise is incorrect: the docs explain why a cosigner is needed. Users sign an order that defines a price range, and without a trusted party an auctioneer could fill at the worst price within that range. The cosigner field lets users designate an auctioneer they trust to run the auction within the signed parameters and return an executable quote."
 
 recategorize:
   draft-16: factual   # "which version introduced subscribers" is a fact lookup, not a numeric value
