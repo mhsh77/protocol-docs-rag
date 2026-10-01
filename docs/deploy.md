@@ -1,8 +1,39 @@
 # Deploying on a small VPS
 
-Tested target: a Linux VPS with Docker. Everything except the LLM runs on the server's
-CPU (embeddings, BM25, reranker, Qdrant in embedded mode), so no GPU and no database
-service are needed.
+Everything except the LLM runs on the server's CPU (embeddings, BM25, reranker, Qdrant in
+embedded mode), so no GPU and no database service are needed. Two ways to deploy:
+
+- **systemd, no Docker** (what the live demo uses): lightest option, for a small shared box.
+- **Docker Compose**: self-contained, for a dedicated server with 2+ GB RAM (section below).
+
+## Option A: systemd on a small shared VPS (live demo setup)
+
+The live bot runs this way on a 1 vCPU / 1 GB RAM Debian 13 VPS that also hosts other
+services. Measured there: peak ~680 MB RSS, retrieval 2.5–4.3 s per question.
+The unit file [`deploy/docrag-bot.service`](../deploy/docrag-bot.service) makes the bot the
+first process the kernel kills under memory pressure (`OOMScoreAdjust=800`), caps it at
+1.1 GB (`MemoryMax`), and gives it low CPU priority, so other services on the host win.
+
+```bash
+# on the server, as root
+useradd --system --create-home --home-dir /opt/docrag --shell /usr/sbin/nologin docrag
+curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
+# copy the code to /opt/docrag (git clone, or `git archive HEAD | ssh ... tar -x`)
+# copy a prebuilt index from your laptop to skip embedding on a small CPU:
+#   data/raw/<corpus>, data/processed/<corpus>, data/index/<corpus>
+# create /opt/docrag/.env (chmod 600, owned by docrag) with GROQ_API_KEY,
+#   TELEGRAM_BOT_TOKEN, GENERATOR_MODEL, LLM_PROVIDER=groq, LOG_SALT
+chown -R docrag:docrag /opt/docrag
+cd /opt/docrag && sudo -u docrag env HOME=/opt/docrag uv sync --frozen --no-dev
+cp deploy/docrag-bot.service /etc/systemd/system/
+mkdir -p /opt/docrag/logs && chown docrag:docrag /opt/docrag/logs
+systemctl daemon-reload && systemctl enable --now docrag-bot
+journalctl -u docrag-bot -f      # look for "Application started"
+```
+
+Update: copy the new code, `uv sync --frozen --no-dev`, `systemctl restart docrag-bot`.
+
+## Option B: Docker Compose
 
 ## Sizing
 
@@ -12,14 +43,14 @@ service are needed.
 | Disk | 6 GB | image ≈ 1.5 GB, HF models ≈ 1.5 GB, indexes + caches < 200 MB |
 | CPU | 2 vCPU | the reranker dominates latency; see the latency column in the results table |
 
-## 1. Install Docker (Ubuntu/Debian)
+### 1. Install Docker (Ubuntu/Debian)
 
 ```bash
 curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER && newgrp docker
 ```
 
-## 2. Get the code and configure secrets
+### 2. Get the code and configure secrets
 
 ```bash
 git clone <your-repo-url> docrag && cd docrag
@@ -29,7 +60,7 @@ chmod 600 .env
 mkdir -p data logs eval && sudo chown -R 1000:1000 data logs eval   # container runs as uid 1000
 ```
 
-## 3. Build and index (one-off)
+### 3. Build and index (one-off)
 
 ```bash
 docker compose build
@@ -43,7 +74,7 @@ model and reranker from Hugging Face into `./data/hf`.
 Shortcut: embedding is the slow part on a small CPU. You can instead build locally and
 copy the results: `scp -r data/processed data/index data/cache data/raw user@vps:docrag/data/`.
 
-## 4. Start the bot
+### 4. Start the bot
 
 ```bash
 docker compose up -d bot
@@ -52,7 +83,7 @@ docker compose logs -f bot        # look for "Application started"
 
 Message the bot on Telegram: `/start`, then a question.
 
-## 5. Operate
+### 5. Operate
 
 | Task | Command |
 |---|---|

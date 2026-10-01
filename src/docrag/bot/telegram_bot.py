@@ -68,5 +68,7 @@ def build_app(token: str, service: AnswerService, protocol: str) -> Application:
 
 def run(token: str, service: AnswerService, protocol: str) -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
-    logging.getLogger("httpx").setLevel(logging.WARNING)  # don't log URLs containing the token
+    # Request-URL logging off for both HTTP clients: Telegram URLs contain the bot token.
+    for name in ("httpx", "httpx2", "httpcore"):
+        logging.getLogger(name).setLevel(logging.WARNING)
     build_app(token, service, protocol).run_polling(allowed_updates=Update.ALL_TYPES)

@@ -1,0 +1,38 @@
+[Unit]
+Description=Uniswap Docs Assistant Telegram bot (docrag)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=docrag
+Group=docrag
+WorkingDirectory=/opt/docrag
+Environment=HOME=/opt/docrag
+Environment=HF_HOME=/opt/docrag/data/hf
+Environment=TQDM_DISABLE=1
+Environment=PYTHONUNBUFFERED=1
+Environment=OMP_NUM_THREADS=1
+Environment=MKL_NUM_THREADS=1
+ExecStart=/opt/docrag/.venv/bin/rag bot
+Restart=on-failure
+RestartSec=30
+
+# Protect the other services on this 1-CPU / 1 GB host:
+# the bot is the first thing the kernel kills under memory pressure,
+# it is throttled at 900 MB and hard-capped at 1.1 GB, and it yields CPU.
+OOMScoreAdjust=800
+MemoryHigh=900M
+MemoryMax=1100M
+CPUWeight=20
+Nice=10
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/docrag/data /opt/docrag/logs
+
+[Install]
+WantedBy=multi-user.target
