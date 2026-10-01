@@ -137,6 +137,29 @@ def judge_agreement(
         typer.echo(f"  {item}: reviewer {human}, judge {judge}")
 
 
+@app.command("gate-analysis")
+def gate_analysis(
+    run: Path = typer.Argument(..., help="Test-split run directory."),
+    threshold: float = typer.Option(..., help="Reranker-score gate to simulate (from dev)."),
+) -> None:
+    """Secondary analysis: simulate a retrieval-score gate on saved hybrid_rerank records.
+
+    Read-only and post hoc: it never changes the reported configuration, it shows what a
+    gate fixed in advance on dev would have done on test.
+    """
+    from docrag.eval.report import load_records
+    from docrag.eval.threshold import simulate
+
+    recs = load_records(run).get("hybrid_rerank", [])
+    for t in (None, threshold):
+        p = simulate(recs, t)
+        label = "model only" if t is None else f"gate < {t}"
+        typer.echo(
+            f"{label:14} correct abstention {p.correct_abstention:.1%} (n={p.n_unanswerable}), "
+            f"false abstention {p.false_abstention:.1%} (n={p.n_answerable})"
+        )
+
+
 @app.command("tune-threshold")
 def tune_threshold(
     run: Path = typer.Argument(..., help="Dev-split run directory with hybrid_rerank records."),

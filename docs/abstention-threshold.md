@@ -46,3 +46,6 @@ questions this is a coarse estimate; the test split measures it out of sample.
   not by tuning on test.
 - This run is unjudged (`--no-judge`): threshold tuning needs only retrieval scores and the
   abstain decision, which leaves the judge's daily token quota for the test run.
+- **Pre-registered for the secondary test analysis** (written before any test-split result
+  existed): simulated gate at **2.65**, the midpoint of the dev gap between 2.44 and 2.85.
+  Reproduce with `rag gate-analysis <test-run-dir> --threshold 2.65`.
