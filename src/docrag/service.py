@@ -148,7 +148,10 @@ def build_service(cfg: PipelineConfig, settings: Settings) -> AnswerService:
     # Load the embedding model and reranker now, so the first user doesn't wait ~30 s.
     retriever.retrieve("warm-up query")
     llm = CachedLLM(
-        make_client(settings.generator_model, settings), settings.cache_dir / "llm_cache.sqlite"
+        make_client(
+            settings.generator_model, settings, settings.generator_reasoning_effort or None
+        ),
+        settings.cache_dir / "llm_cache.sqlite",
     )
     return AnswerService(
         Assistant(retriever, llm, cfg.generation),

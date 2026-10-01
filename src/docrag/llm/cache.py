@@ -43,7 +43,16 @@ class CachedLLM:
     ) -> LLMResponse:
         key = hashlib.sha256(
             json.dumps(
-                [self.model, system, prompt, temperature, json_schema, max_output_tokens],
+                [
+                    self.model,
+                    # provider endpoint + reasoning effort also change the response
+                    getattr(self.inner, "cache_tag", ""),
+                    system,
+                    prompt,
+                    temperature,
+                    json_schema,
+                    max_output_tokens,
+                ],
                 sort_keys=True,
             ).encode()
         ).hexdigest()

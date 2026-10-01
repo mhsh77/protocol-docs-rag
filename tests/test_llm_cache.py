@@ -40,3 +40,12 @@ def test_cache_persists_across_instances(tmp_path: Path) -> None:
     CachedLLM(inner, tmp_path / "c.sqlite").generate("q")
     CachedLLM(inner, tmp_path / "c.sqlite").generate("q")
     assert inner.calls == 1
+
+
+def test_provider_or_reasoning_setting_is_part_of_the_key(tmp_path: Path) -> None:
+    a, b = CountingLLM(), CountingLLM()
+    a.cache_tag = "https://provider-a|reasoning=default"  # type: ignore[attr-defined]
+    b.cache_tag = "https://provider-a|reasoning=none"  # type: ignore[attr-defined]
+    CachedLLM(a, tmp_path / "c.sqlite").generate("q")
+    CachedLLM(b, tmp_path / "c.sqlite").generate("q")
+    assert a.calls == 1 and b.calls == 1  # same model and prompt, different system: no hit

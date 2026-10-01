@@ -136,6 +136,8 @@ class Settings(BaseSettings):
     cerebras_api_key: str = ""
     generator_model: str = ""
     judge_model: str = ""
+    # e.g. "none" to disable hidden thinking for qwen on Cerebras ("" = provider default).
+    generator_reasoning_effort: str = ""
     # Reasoning effort for the judge when it is a reasoning model ("" = provider default).
     judge_reasoning_effort: str = ""
     # Optional separate provider for the judge (same model, more free quota). "" = LLM_PROVIDER.

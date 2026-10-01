@@ -46,6 +46,9 @@ class OpenAICompatClient:
         self._max_json_retries = 2
         # For reasoning models (e.g. gpt-oss): "low" | "medium" | "high"; None = provider default.
         self._reasoning_effort = reasoning_effort
+        # Part of the response-cache key: same model name on another provider or with another
+        # reasoning setting is a different system.
+        self.cache_tag = f"{base_url}|reasoning={reasoning_effort or 'default'}"
 
     def generate(
         self,

@@ -112,6 +112,7 @@ def run_fingerprint(
         "generation": gcfg.model_dump(mode="json"),
         "provider": settings.llm_provider,
         "generator_model": settings.generator_model,
+        "generator_reasoning_effort": settings.generator_reasoning_effort,
         "judge_model": settings.judge_model,
         "judge_reasoning_effort": settings.judge_reasoning_effort,
         "judge_provider": settings.judge_provider or settings.llm_provider,
@@ -201,7 +202,12 @@ def run_eval(
         log(f"WARNING: evidence not found in any chunk for {missing}")
 
     cache = settings.cache_dir / "llm_cache.sqlite"
-    gen_llm = CachedLLM(make_client(settings.generator_model, settings), cache)
+    gen_llm = CachedLLM(
+        make_client(
+            settings.generator_model, settings, settings.generator_reasoning_effort or None
+        ),
+        cache,
+    )
     judge_llm = (
         CachedLLM(
             make_client(
