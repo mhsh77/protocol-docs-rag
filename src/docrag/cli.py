@@ -15,6 +15,7 @@ app = typer.Typer(no_args_is_help=True, add_completion=False)
 
 DRAFTS_PATH = PROJECT_ROOT / "eval" / "drafts" / "questions_draft.jsonl"
 QUESTIONS_PATH = PROJECT_ROOT / "eval" / "questions.jsonl"
+CURATION_PATH = PROJECT_ROOT / "eval" / "curation.yaml"
 
 ConfigOpt = typer.Option(None, "--config", "-c", help="Pipeline YAML (default: $CORPUS_CONFIG).")
 
@@ -68,6 +69,7 @@ def draft_questions(
             verifier=make_client(verifier_model, settings),
             retriever=retriever,
             out_path=DRAFTS_PATH,
+            curation_path=CURATION_PATH,
             log=typer.echo,
         )
     finally:
@@ -80,9 +82,28 @@ def finalize_questions() -> None:
     """Assign stratified dev/test splits and stable ids -> eval/questions.jsonl."""
     from docrag.eval.build_set import finalize
 
-    qs = finalize(DRAFTS_PATH, QUESTIONS_PATH)
+    qs = finalize(DRAFTS_PATH, QUESTIONS_PATH, CURATION_PATH)
     dev = sum(q.split == "dev" for q in qs)
     typer.echo(f"{len(qs)} questions ({dev} dev / {len(qs) - dev} test) -> {QUESTIONS_PATH.name}")
+
+
+@app.command("review-sheet")
+def review_sheet(
+    config: Path | None = ConfigOpt,
+    per_category: int = typer.Option(5, help="Questions sampled per category."),
+) -> None:
+    """Write a stratified sample of eval/questions.jsonl for human review."""
+    from docrag.eval.dataset import read_questions
+    from docrag.eval.review import lint_question, render_review_sheet, write_review_sheet
+
+    cfg = load_pipeline_config(config)
+    qs = read_questions(QUESTIONS_PATH)
+    flagged = [(q.id, issues) for q in qs if (issues := lint_question(q))]
+    for qid, issues in flagged:
+        typer.echo(f"  lint {qid}: {', '.join(issues)}")
+    out = PROJECT_ROOT / "eval" / "review" / "review_sample.md"
+    write_review_sheet(render_review_sheet(qs, cfg, per_category), out)
+    typer.echo(f"{len(flagged)} lint flags; review sheet -> {out.relative_to(PROJECT_ROOT)}")
 
 
 @app.command("eval")

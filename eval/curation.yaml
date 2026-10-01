@@ -1,0 +1,67 @@
+# Human curation of LLM-drafted eval questions (eval/drafts/questions_draft.jsonl).
+# Applied by `rag finalize-questions`. Every change from draft to final set is listed here.
+#
+#   drop:    removed from the set, with a reason
+#   rewrite: new question and/or reference text (evidence quotes are kept and must still match)
+#   recategorize: change category
+#
+# Reviewer: Claude (first pass). The project owner reviews a stratified sample afterwards.
+
+drop:
+  draft-10: "worked example (filler priority fee), not a protocol fact; meaningless without the example"
+  draft-11: "value from an illustrative GraphQL query ('first: 1000'), context-dependent"
+  draft-13: "WETH address from example code; duplicates draft-28 (WETH on Ethereum)"
+  draft-14: "tickUpper from illustrative example code"
+  draft-18: "mint amount in an example token contract, not a protocol fact"
+  draft-19: "slippage value from illustrative example code"
+  draft-21: "DAI address 'used in the example', context-dependent"
+  draft-25: "pool address from a sample tool output, not a stable fact"
+  draft-55: "not a false premise: the doc's tutorial *chooses* afterSwap, it does not say beforeSwap is wrong"
+  draft-56: "yes/no question, not a false premise; evidence does not support the addresses in the reference"
+  draft-60: "not outdated terminology (Unichain Sepolia is current)"
+  draft-62: "not outdated terminology; vague ('legacy swap API') and odd phrasing"
+  draft-63: "invented legacy behaviour; confusing premise"
+  draft-64: "not outdated terminology"
+  draft-71: "question about the docs' navigation, not about the protocol"
+  draft-79: "depends on an example script"
+  draft-83: "walkthrough of SDK example code; both quotes from the same snippet, not multi-section"
+  # Unanswerable: keep near-miss technical questions and a few realistic out-of-scope ones;
+  # drop trivially out-of-scope ones that any model declines (they would inflate abstention).
+  draft-88: "trivially out of scope (internal prioritisation of a docs tools list)"
+  draft-91: "trivially out of scope (benchmarks vs other products)"
+  draft-92: "trivially out of scope (internal team criteria)"
+  draft-94: "trivially out of scope (third-party product comparison)"
+  draft-98: "trivially out of scope (future release dates)"
+  draft-100: "trivially out of scope (future plans)"
+  draft-105: "hidden false premise: v4 already supports dynamic fees, so this is not cleanly unanswerable"
+  draft-106: "confusing question mixing SDK and API internals"
+  draft-113: "address taken from example code; network unspecified, so the answer is ambiguous"
+  draft-115: "about MakerDAO's collateral ratio, mentioned only as an illustration in the docs"
+  draft-117: "address 'shown in the documentation example', context-dependent"
+  draft-118: "value from illustrative example code"
+  draft-120: "the 'default' it contradicts is just the example's setting, not a protocol fact"
+  draft-123: "asks which docs sections contain an example (docs navigation)"
+  draft-124: "walkthrough of SDK example code (same snippet as draft-83)"
+  draft-128: "anchored to an example query; unclear whether the example itself answers it"
+  draft-135: "incoherent: mixes filler bids with the LP API fee-claim endpoint"
+  draft-140: "compiler version of an example hook contract, not a protocol fact"
+  draft-147: "incoherent: asks for a gas limit on a subgraph entity"
+
+rewrite:
+  draft-7:
+    question: "If a pool's tick is 0 for 5 seconds and then 100 for 5 seconds, what is the tick accumulator value?"
+  draft-24:
+    question: "What is the deployment address of the Uniswap smart wallet contract on Optimism?"
+  draft-26:
+    question: "When withdrawing from Unichain by calling depositTransaction on the L1 Optimism Portal, what gas limit do the docs use?"
+  draft-48:
+    question: "In the v3 liquidity density chart, what does the total locked liquidity shown in the tooltip represent, and how is it calculated?"
+  draft-50:
+    question: "What are the two ways the docs offer to get started building Uniswap v4 hooks?"
+  draft-53:
+    question: "In the Trading API proxy approval flow, why does the proxy contract have a different address on every network?"
+  draft-61:
+    question: "Older Uniswap docs talked about 'exchange contracts' that held liquidity and executed swaps. What are they called in the current protocol?"
+
+recategorize:
+  draft-16: factual   # "which version introduced subscribers" is a fact lookup, not a numeric value

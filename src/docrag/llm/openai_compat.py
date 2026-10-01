@@ -110,6 +110,10 @@ class OpenAICompatClient:
                 openai.RateLimitError,
                 openai.APIConnectionError,
                 openai.InternalServerError,
+                # Groq occasionally returns a bare 403 "Forbidden" that succeeds on retry
+                # (observed during network/VPN changes). A real auth failure keeps failing
+                # and is re-raised after max_retries.
+                openai.PermissionDeniedError,
             ) as e:
                 wait = _retry_after(e)
                 if wait is not None and wait > self._max_wait_s:

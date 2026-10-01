@@ -12,6 +12,8 @@ from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
 
+import yaml
+
 from docrag.config import PipelineConfig, RetrievalMode
 from docrag.corpus.fetch import MANIFEST_NAME, read_manifest
 from docrag.eval.dataset import (
@@ -43,7 +45,9 @@ TARGETS: dict[tuple[Category, str | None], int] = {
     (Category.MULTI_SECTION, None): 20,
     (Category.UNANSWERABLE, None): 28,
     (Category.ADVERSARIAL, "false_premise"): 8,
-    (Category.ADVERSARIAL, "outdated_term"): 6,
+    # LLM drafts of this subtype were mostly invalid (4 of 6 dropped in review); the set uses
+    # 2 curated drafts + 3 hand-written questions with verified evidence (eval/curation.yaml).
+    (Category.ADVERSARIAL, "outdated_term"): 5,
     (Category.ADVERSARIAL, "other_protocol"): 7,
 }
 DEV_FRACTION = 0.27  # ~30 of ~114 questions for tuning; the rest is the held-out test split
@@ -59,11 +63,13 @@ def build_drafts(
     verifier: LLMClient,
     retriever: Retriever,
     out_path: Path,
+    curation_path: Path | None = None,
     seed: int = 7,
     log: Callable[[str], None] = print,
 ) -> list[EvalQuestion]:
     existing = read_questions(out_path) if out_path.exists() else []
-    counts = Counter((q.category, q.subtype) for q in existing)
+    curated = apply_curation(existing, load_curation(curation_path)) if curation_path else existing
+    counts = Counter((q.category, q.subtype) for q in curated)
     used = {q.notes for q in existing if q.notes}
     rng = random.Random(seed)
     sections = list(iter_sections(cfg))
@@ -214,7 +220,43 @@ def assign_splits(questions: list[EvalQuestion], seed: int = 11) -> list[EvalQue
     return out
 
 
-def finalize(drafts_path: Path, out_path: Path) -> list[EvalQuestion]:
-    qs = assign_splits(read_questions(drafts_path))
+def load_curation(path: Path) -> dict[str, dict[str, object]]:
+    if not path.exists():
+        return {}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return {k: (data.get(k) or {}) for k in ("drop", "rewrite", "recategorize")}
+
+
+def apply_curation(
+    questions: list[EvalQuestion], curation: dict[str, dict[str, object]]
+) -> list[EvalQuestion]:
+    """Apply human review decisions. Unknown ids in the curation file are an error."""
+    ids = {q.id for q in questions}
+    for section in curation.values():
+        unknown = set(section) - ids
+        if unknown:
+            raise ValueError(f"curation refers to unknown draft ids: {sorted(unknown)}")
+    out = []
+    for q in questions:
+        if q.id in curation.get("drop", {}):
+            continue
+        update: dict[str, object] = {}
+        rw = curation.get("rewrite", {}).get(q.id)
+        if isinstance(rw, dict):
+            if "question" in rw:
+                update["question"] = rw["question"]
+            if "reference" in rw:
+                update["reference_answer"] = rw["reference"]
+            update["source"] = "llm_draft+human_edit"
+        cat = curation.get("recategorize", {}).get(q.id)
+        if cat:
+            update["category"] = Category(str(cat))
+        out.append(q.model_copy(update=update) if update else q)
+    return out
+
+
+def finalize(drafts_path: Path, out_path: Path, curation_path: Path) -> list[EvalQuestion]:
+    qs = apply_curation(read_questions(drafts_path), load_curation(curation_path))
+    qs = assign_splits(qs)
     write_questions(qs, out_path)
     return qs

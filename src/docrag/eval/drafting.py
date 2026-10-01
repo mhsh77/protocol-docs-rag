@@ -22,6 +22,12 @@ from docrag.ingest.mdx import normalize_mdx
 from docrag.llm.base import LLMClient
 from docrag.retrieval.retriever import Retriever
 
+# Phrases that make a question depend on the drafter's passage rather than stand alone.
+CONTEXT_DEPENDENT = re.compile(
+    r"\b(this|the) (passage|section|example|snippet|guide|page|document|code|table|text)\b"
+    r"|\b(above|below|following|aforementioned)\b",
+    re.IGNORECASE,
+)
 _WORDS = lambda t: len(t.split())  # noqa: E731  (token proxy for section sizing)
 _NUMERIC_RE = re.compile(
     r"\b\d+(?:[.,]\d+)*\s*(?:%|bps|basis points|seconds|blocks|days|wei|gwei|bits?)\b"
@@ -77,7 +83,13 @@ item or table row) that support the answer.""",
 </passage>
 Write ONE question whose answer is an exact value stated in this passage (a number, fee,
 percentage, address, parameter value, limit, or constant). The reference answer must
-state the exact value. Give 1 exact evidence quote (6-40 words) containing the value.""",
+state the exact value. Give 1 exact evidence quote (6-40 words) containing the value.
+Ask only about real protocol facts (deployed addresses, fee tiers, limits, defaults,
+constants, protocol parameters). Do NOT ask about values that only appear in illustrative
+example code or worked examples (sample amounts, example ticks, example outputs). The question
+must make sense on its own to someone who has not seen this passage: name the contract,
+network, API or feature it is about, and never say "the example", "this passage" or "the guide".
+If the passage has no such value, return an empty question string.""",
     "false_premise": """Section: {heading}
 <passage>
 {passage}
@@ -117,8 +129,11 @@ def _validate(
 ) -> list[Evidence] | None:
     """Map each quote to the passage containing it; reject on any miss."""
     quotes = data.get("evidence")
-    if not isinstance(quotes, list) or not quotes or not str(data.get("question", "")).strip():
+    question = str(data.get("question", "")).strip()
+    if not isinstance(quotes, list) or not quotes or not question:
         return None
+    if CONTEXT_DEPENDENT.search(question):
+        return None  # "in the example ...": not a standalone user question
     out = []
     for q in quotes:
         q = str(q)
@@ -181,10 +196,13 @@ UNANSWERABLE_PROMPT = """Here are the titles of sections in the Uniswap develope
 on one topic:
 {headings}
 
-Write {n} questions a developer might plausibly ask about this topic that the documentation
-very likely does NOT answer: specific details, numbers, timelines, comparisons, internal
-policies, or behaviour that documentation of this kind normally omits. They must sound
-realistic and on-topic, not absurd. Return JSON: {{"questions": ["...", "..."]}}"""
+Write {n} NEAR-MISS questions: specific technical questions a developer might ask about this
+topic that sound like the documentation should answer them, but that it very likely does NOT
+(e.g. an exact limit, default, error behaviour, edge case or parameter of a named contract,
+function, endpoint or SDK method mentioned in these sections that the docs do not specify).
+The best near-miss questions retrieve relevant-looking sections that still lack the answer.
+Avoid easy out-of-scope questions about roadmaps, release dates, team size, internal company
+policies or benchmarks against other products. Return JSON: {{"questions": ["...", "..."]}}"""
 
 UNANSWERABLE_SCHEMA = {
     "type": "object",
