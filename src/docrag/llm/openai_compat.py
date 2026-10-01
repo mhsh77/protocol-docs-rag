@@ -70,11 +70,16 @@ class OpenAICompatClient:
         estimate = _estimate_tokens(sys_msg + prompt) + min(max_output_tokens, 400)
         attempt = 0
         json_failures = 0
+        # Latency = provider time including provider-side retries/backoff (users feel those),
+        # excluding our own client-side throttling (an artefact of free-tier quotas).
+        t0 = time.perf_counter()
+        throttle_s = 0.0
         while True:
+            w0 = time.perf_counter()
             self._limiter.wait()
             if self._tokens:
                 self._tokens.wait(estimate)
-            start = time.perf_counter()
+            throttle_s += time.perf_counter() - w0
             try:
                 resp = self._client.chat.completions.create(
                     model=self.model,
@@ -97,7 +102,8 @@ class OpenAICompatClient:
                 return LLMResponse(
                     text="",
                     model=self.model,
-                    latency_s=time.perf_counter() - start,
+                    latency_s=time.perf_counter() - t0 - throttle_s,
+                    throttle_s=throttle_s,
                     retries=attempt + json_failures,
                 )
             except (
@@ -122,8 +128,9 @@ class OpenAICompatClient:
                 model=self.model,
                 input_tokens=usage.prompt_tokens if usage else 0,
                 output_tokens=usage.completion_tokens if usage else 0,
-                latency_s=time.perf_counter() - start,
-                retries=attempt,
+                latency_s=time.perf_counter() - t0 - throttle_s,
+                throttle_s=throttle_s,
+                retries=attempt + json_failures,
             )
 
 

@@ -123,7 +123,12 @@ class Assistant:
             if parsed is None:
                 continue
             abstained = bool(parsed.get("abstain"))
-            check = check_citations(str(parsed.get("answer", "")), len(retrieved), abstained)
+            check = check_citations(
+                str(parsed.get("answer", "")),
+                len(retrieved),
+                abstained,
+                require_sentence_coverage=cfg.require_sentence_coverage,
+            )
             if not cfg.citation_check or check.valid:
                 break
             if attempt + 1 < attempts:

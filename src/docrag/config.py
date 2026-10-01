@@ -71,11 +71,15 @@ class ViolationPolicy(StrEnum):
 
 class GenerationConfig(BaseModel):
     protocol_name: str = "Uniswap"
-    prompt_version: str = "answer_v1"
+    prompt_version: str = "answer_v2"
     temperature: float = 0.0
     max_output_tokens: int = 1024
     citation_check: bool = True
     max_citation_retries: int = 1
+    # Enforce a citation on every sentence (retry, then abstain). Off by default: in smoke
+    # tests it turned correct false-premise corrections ("The premise is incorrect. ...")
+    # into abstentions. Uncited sentences are still recorded and reported.
+    require_sentence_coverage: bool = False
     on_violation: ViolationPolicy = ViolationPolicy.ABSTAIN
     # Abstain before calling the LLM when the top reranker score is below this.
     # None = disabled. Tuned on the dev split only (see docs/abstention-threshold.md).
@@ -137,6 +141,8 @@ class Settings(BaseSettings):
     llm_tokens_per_minute: int = 7500
 
     telegram_bot_token: str = ""
+    # Optional override for the Qdrant directory (default: data/index/<corpus>/qdrant).
+    qdrant_path: Path | None = None
     # Salt for hashing user ids in usage logs (raw Telegram ids are never written).
     log_salt: str = "change-me"
 

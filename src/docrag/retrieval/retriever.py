@@ -71,7 +71,8 @@ class Retriever:
         if meta["n_chunks"] != len(self.chunks) or meta["chunking"] != cfg.chunking.model_dump():
             raise RuntimeError("Index is stale relative to chunks/config; run `rag ingest`.")
         self.embedder = Embedder(cfg.embedding, settings.cache_dir / "embeddings.sqlite")
-        self.store = VectorStore(idx / "qdrant")
+        # QDRANT_PATH lets a second process read a copy (embedded Qdrant holds a file lock).
+        self.store = VectorStore(settings.qdrant_path or idx / "qdrant")
         self.bm25 = BM25Index.load(idx / "bm25")
         self._reranker: CrossEncoderReranker | None = None
 

@@ -82,6 +82,12 @@ def per_question(r: Record) -> dict[str, float | None]:
             if r.citation_first_attempt_valid is not None
             else None
         ),
+        # Answers in which every claim sentence carries a citation (measured, not enforced).
+        "fully_cited": (
+            (1.0 if r.n_uncited_sentences == 0 else 0.0)
+            if not r.abstained and r.n_uncited_sentences is not None
+            else None
+        ),
         "latency_s": r.retrieval_s + r.generation_s,
         "tokens": float(r.input_tokens + r.output_tokens),
         "judge_tokens": float(r.judge_tokens),
@@ -107,6 +113,7 @@ def summarize(records: list[Record]) -> dict[str, object]:
         "false_abstention",
         "citation_valid",
         "citation_first_try_valid",
+        "fully_cited",
     ):
         vals = _vals(rows, key)
         lo, hi = bootstrap_ci(vals)

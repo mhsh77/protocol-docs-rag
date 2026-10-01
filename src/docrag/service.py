@@ -145,6 +145,8 @@ def _usage_logger(path: Path) -> structlog.stdlib.BoundLogger:
 
 def build_service(cfg: PipelineConfig, settings: Settings) -> AnswerService:
     retriever = Retriever(cfg, cfg.retrieval, settings)
+    # Load the embedding model and reranker now, so the first user doesn't wait ~30 s.
+    retriever.retrieve("warm-up query")
     llm = CachedLLM(
         make_client(settings.generator_model, settings), settings.cache_dir / "llm_cache.sqlite"
     )

@@ -12,7 +12,8 @@ class LLMResponse(BaseModel):
     model: str
     input_tokens: int = 0
     output_tokens: int = 0
-    latency_s: float = 0.0
+    latency_s: float = 0.0  # provider time incl. retries, excl. client-side throttling
+    throttle_s: float = 0.0  # time spent waiting on our own rate limiter
     retries: int = 0
 
 

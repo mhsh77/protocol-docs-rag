@@ -78,6 +78,7 @@ class Record(BaseModel):
     cited_ids: list[str]
     citation_valid: bool | None
     citation_first_attempt_valid: bool | None
+    n_uncited_sentences: int | None = None
     n_llm_calls: int
     input_tokens: int
     output_tokens: int
@@ -157,6 +158,9 @@ def _record(
         cited_ids=[c.chunk_id for c in ans.citations],
         citation_valid=ans.citation_check.valid if ans.citation_check else None,
         citation_first_attempt_valid=first_valid,
+        n_uncited_sentences=(
+            len(ans.citation_check.uncited_sentences) if ans.citation_check else None
+        ),
         n_llm_calls=len(ans.llm_calls),
         input_tokens=ans.input_tokens,
         output_tokens=ans.output_tokens,

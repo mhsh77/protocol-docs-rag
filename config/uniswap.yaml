@@ -49,10 +49,11 @@ retrieval:
 
 generation:
   protocol_name: Uniswap
-  prompt_version: answer_v1
+  prompt_version: answer_v2
   temperature: 0.0
   citation_check: true
   max_citation_retries: 1
+  require_sentence_coverage: false   # measured, not enforced (see config.py comment)
   on_violation: abstain        # flag | abstain
   min_rerank_score: null       # tuned on the dev split only
 
