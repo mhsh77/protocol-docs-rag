@@ -6,10 +6,15 @@ from pathlib import Path
 
 import typer
 
-from docrag.config import load_pipeline_config
+from docrag.config import PROJECT_ROOT, Settings, load_pipeline_config
 from docrag.corpus.fetch import fetch_corpus, verify_corpus
+from docrag.ingest.pipeline import build_chunks, write_chunks
+from docrag.retrieval.retriever import build_index, index_dir
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
+
+DRAFTS_PATH = PROJECT_ROOT / "eval" / "drafts" / "questions_draft.jsonl"
+QUESTIONS_PATH = PROJECT_ROOT / "eval" / "questions.jsonl"
 
 ConfigOpt = typer.Option(None, "--config", "-c", help="Pipeline YAML (default: $CORPUS_CONFIG).")
 
@@ -22,6 +27,61 @@ def fetch(config: Path | None = ConfigOpt) -> None:
     total_kb = sum(e.bytes for e in entries) / 1024
     typer.echo(f"Fetched {len(entries)} files ({total_kb:.0f} KB) @ {cfg.corpus.commit[:7]}")
     _report_verify(cfg.raw_dir)
+
+
+@app.command()
+def ingest(config: Path | None = ConfigOpt) -> None:
+    """Normalize and chunk the raw corpus into data/processed/<corpus>/chunks.jsonl."""
+    cfg = load_pipeline_config(config)
+    _report_verify(cfg.raw_dir)
+    chunks = build_chunks(cfg)
+    write_chunks(chunks, cfg.chunks_path)
+    sizes = sorted(c.n_tokens for c in chunks)
+    typer.echo(
+        f"Wrote {len(chunks)} chunks -> {cfg.chunks_path.relative_to(PROJECT_ROOT)} "
+        f"(tokens p50={sizes[len(sizes) // 2]}, p95={sizes[int(len(sizes) * 0.95)]}, "
+        f"max={sizes[-1]})"
+    )
+    typer.echo("Embedding (cached) and building dense + BM25 indexes ...")
+    n = build_index(cfg)
+    typer.echo(f"Indexed {n} chunks -> {index_dir(cfg).relative_to(PROJECT_ROOT)}")
+
+
+@app.command("draft-questions")
+def draft_questions(
+    config: Path | None = ConfigOpt,
+    verifier_model: str = typer.Option("openai/gpt-oss-20b", help="Model for unanswerable checks."),
+) -> None:
+    """Draft eval questions (resumable) into eval/drafts/questions_draft.jsonl."""
+    from docrag.eval.build_set import build_drafts
+    from docrag.llm import make_client
+    from docrag.retrieval.retriever import RetrievalConfig, Retriever
+
+    cfg = load_pipeline_config(config)
+    settings = Settings()
+    retriever = Retriever(cfg, RetrievalConfig(), settings)
+    try:
+        qs = build_drafts(
+            cfg,
+            drafter=make_client(settings.judge_model, settings),
+            verifier=make_client(verifier_model, settings),
+            retriever=retriever,
+            out_path=DRAFTS_PATH,
+            log=typer.echo,
+        )
+    finally:
+        retriever.close()
+    typer.echo(f"{len(qs)} drafted questions in {DRAFTS_PATH.relative_to(PROJECT_ROOT)}")
+
+
+@app.command("finalize-questions")
+def finalize_questions() -> None:
+    """Assign stratified dev/test splits and stable ids -> eval/questions.jsonl."""
+    from docrag.eval.build_set import finalize
+
+    qs = finalize(DRAFTS_PATH, QUESTIONS_PATH)
+    dev = sum(q.split == "dev" for q in qs)
+    typer.echo(f"{len(qs)} questions ({dev} dev / {len(qs) - dev} test) -> {QUESTIONS_PATH.name}")
 
 
 @app.command()

@@ -27,3 +27,22 @@ corpus:
   strip_prefix: content/
   published_url_template: "https://developers.uniswap.org/docs/{path}"
   license_file: LICENSE
+
+chunking:
+  # Chosen by the chunk-size experiment: docs/experiments/chunk_size.md
+  max_tokens: 256
+  overlap_tokens: 32
+  min_section_tokens: 0   # merging small sections did not help measurably
+  max_code_tokens: 1024
+
+embedding:
+  model: BAAI/bge-base-en-v1.5
+
+retrieval:
+  mode: hybrid_rerank      # dense | hybrid | hybrid_rerank
+  top_k: 5
+  dense_candidates: 30
+  bm25_candidates: 30
+  rrf_k: 60
+  rerank_candidates: 20
+  reranker_model: BAAI/bge-reranker-base

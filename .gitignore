@@ -20,3 +20,5 @@ data/cache/
 # Logs
 logs/
 *.log
+data/processed/
+eval/drafts/
