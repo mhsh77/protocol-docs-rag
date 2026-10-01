@@ -4,7 +4,8 @@ import re
 
 from docrag.config import PROJECT_ROOT
 
-SECRET_VARS = re.compile(r"^[ \t]*([A-Z_]*(?:KEY|TOKEN|SECRET)[A-Z_]*)[ \t]*=[ \t]*(\S+)", re.M)
+# Names that hold secrets end in _KEY / _TOKEN / _SECRET (not e.g. JUDGE_TOKENS_PER_MINUTE).
+SECRET_VARS = re.compile(r"^[ \t]*([A-Z_]*(?:KEY|TOKEN|SECRET))[ \t]*=[ \t]*(\S+)", re.M)
 
 
 def test_env_example_has_no_secret_values() -> None:
