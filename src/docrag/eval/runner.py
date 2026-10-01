@@ -181,11 +181,13 @@ def run_eval(
     gcfg: GenerationConfig | None = None,
     log: Callable[[str], None] = print,
     wait_on_quota: bool = False,
+    judge: bool = True,
 ) -> Path:
     configs = configs or DEFAULT_CONFIGS
     rcfg = rcfg or cfg.retrieval
     gcfg = gcfg or cfg.generation
     fp = run_fingerprint(cfg, rcfg, gcfg, settings, questions_path, configs)
+    fp["judged"] = judge  # unjudged runs (e.g. threshold tuning) get their own directory
     run_dir = run_dir_for(fp)
     (run_dir / "records").mkdir(parents=True, exist_ok=True)
     (run_dir / "fingerprint.json").write_text(json.dumps(fp, indent=2), encoding="utf-8")
@@ -199,8 +201,13 @@ def run_eval(
 
     cache = settings.cache_dir / "llm_cache.sqlite"
     gen_llm = CachedLLM(make_client(settings.generator_model, settings), cache)
-    judge_llm = CachedLLM(
-        make_client(settings.judge_model, settings, settings.judge_reasoning_effort or None), cache
+    judge_llm = (
+        CachedLLM(
+            make_client(settings.judge_model, settings, settings.judge_reasoning_effort or None),
+            cache,
+        )
+        if judge
+        else None
     )
     retriever = Retriever(cfg, rcfg, settings)
     retriever.retrieve("warm-up query", RetrievalMode.HYBRID_RERANK)  # load models before timing
@@ -239,7 +246,11 @@ def run_eval(
         retriever.close()
         log(
             f"LLM cache: generator {gen_llm.hits} hits / {gen_llm.misses} calls, "
-            f"judge {judge_llm.hits} hits / {judge_llm.misses} calls"
+            + (
+                f"judge {judge_llm.hits} hits / {judge_llm.misses} calls"
+                if judge_llm
+                else "no judge"
+            )
         )
     return run_dir
 
@@ -249,11 +260,11 @@ def _answer_and_judge(
     ec: EvalConfig,
     gold: list[set[str]],
     assistant: Assistant,
-    judge_llm: LLMClient,
+    judge_llm: LLMClient | None,
 ) -> Record:
     ans = assistant.answer(q.question, ec.mode)
     rec = _record(q, ec, gold, ans.retrieved, ans)
-    if not ans.abstained:
+    if judge_llm is not None and not ans.abstained:
         jr = judge_answer(
             judge_llm,
             question=q.question,

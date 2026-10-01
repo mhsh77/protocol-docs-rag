@@ -195,6 +195,9 @@ def eval_cmd(
     wait_on_quota: bool = typer.Option(
         False, help="On a daily-quota stop, sleep until the provider resets and continue."
     ),
+    no_judge: bool = typer.Option(
+        False, help="Skip LLM judging (enough for retrieval metrics and threshold tuning)."
+    ),
 ) -> None:
     """Run the full evaluation (resumable) and write the results table."""
     from docrag.eval.report import write_report
@@ -213,6 +216,7 @@ def eval_cmd(
         configs=configs,
         log=typer.echo,
         wait_on_quota=wait_on_quota,
+        judge=not no_judge,
     )
     write_report(run_dir, split)
     typer.echo((run_dir / "results.md").read_text(encoding="utf-8"))

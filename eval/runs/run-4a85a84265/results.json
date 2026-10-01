@@ -1,0 +1,144 @@
+{
+  "split": "dev",
+  "summaries": {
+    "hybrid_rerank": {
+      "n_questions": 29,
+      "hit@1": {
+        "mean": 0.8,
+        "ci95": [
+          0.6,
+          0.95
+        ],
+        "n": 20
+      },
+      "hit@5": {
+        "mean": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "n": 20
+      },
+      "mrr@10": {
+        "mean": 0.8833333333333332,
+        "ci95": [
+          0.775,
+          0.975
+        ],
+        "n": 20
+      },
+      "evidence_recall@5": {
+        "mean": 0.975,
+        "ci95": [
+          0.925,
+          1.0
+        ],
+        "n": 20
+      },
+      "correctness": {
+        "mean": NaN,
+        "ci95": [
+          NaN,
+          NaN
+        ],
+        "n": 0
+      },
+      "fully_correct": {
+        "mean": NaN,
+        "ci95": [
+          NaN,
+          NaN
+        ],
+        "n": 0
+      },
+      "any_unsupported": {
+        "mean": NaN,
+        "ci95": [
+          NaN,
+          NaN
+        ],
+        "n": 0
+      },
+      "correct_abstention": {
+        "mean": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "n": 9
+      },
+      "false_abstention": {
+        "mean": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 20
+      },
+      "citation_valid": {
+        "mean": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "n": 20
+      },
+      "citation_first_try_valid": {
+        "mean": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "n": 29
+      },
+      "fully_cited": {
+        "mean": 0.9,
+        "ci95": [
+          0.75,
+          1.0
+        ],
+        "n": 20
+      },
+      "hallucination_rate": {
+        "mean": NaN,
+        "unsupported_claims": 0,
+        "total_claims": 0,
+        "n": 0
+      },
+      "latency_s": {
+        "p50": 2.9429511000053026,
+        "p95": 3.8449171999702227
+      },
+      "tokens_per_question": 1506.7931034482758,
+      "judge_tokens_per_question": 0.0,
+      "by_category": {
+        "adversarial": {
+          "n": 5,
+          "correctness": NaN,
+          "correct_abstention": 1.0
+        },
+        "factual": {
+          "n": 7,
+          "correctness": NaN,
+          "correct_abstention": NaN
+        },
+        "multi_section": {
+          "n": 5,
+          "correctness": NaN,
+          "correct_abstention": NaN
+        },
+        "numeric": {
+          "n": 5,
+          "correctness": NaN,
+          "correct_abstention": NaN
+        },
+        "unanswerable": {
+          "n": 7,
+          "correctness": NaN,
+          "correct_abstention": 1.0
+        }
+      }
+    }
+  },
+  "vs_baseline": {}
+}
