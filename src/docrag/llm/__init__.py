@@ -13,7 +13,9 @@ OPENAI_COMPAT_BASE_URLS = {
 }
 
 
-def make_client(model: str, settings: Settings | None = None) -> LLMClient:
+def make_client(
+    model: str, settings: Settings | None = None, reasoning_effort: str | None = None
+) -> LLMClient:
     settings = settings or Settings()
     provider = settings.llm_provider
     if provider == "gemini":
@@ -36,6 +38,7 @@ def make_client(model: str, settings: Settings | None = None) -> LLMClient:
             base_url=settings.llm_base_url or OPENAI_COMPAT_BASE_URLS[provider],
             rpm=settings.llm_requests_per_minute,
             tpm=settings.llm_tokens_per_minute or None,
+            reasoning_effort=reasoning_effort,
         )
     raise ValueError(f"Unknown LLM_PROVIDER: {provider!r}")
 

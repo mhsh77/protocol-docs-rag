@@ -65,7 +65,7 @@ def judge_answer(
     reference: str,
     context: str,
     answer: str,
-    version: str = "judge_v1",
+    version: str = "judge_v2",
     max_attempts: int = 2,
 ) -> JudgeResult:
     system, user_t = _template(version)

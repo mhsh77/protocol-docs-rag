@@ -135,6 +135,8 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     generator_model: str = ""
     judge_model: str = ""
+    # Reasoning effort for the judge when it is a reasoning model ("" = provider default).
+    judge_reasoning_effort: str = ""
     # Client-side throttle, kept under the provider's per-minute limit.
     llm_requests_per_minute: int = 25
     # Rolling-minute token budget (Groq free tier: 8K TPM per model). 0 = unlimited.

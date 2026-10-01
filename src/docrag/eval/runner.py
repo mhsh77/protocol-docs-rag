@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -34,7 +35,7 @@ from docrag.eval.judge import Verdict, judge_answer
 from docrag.generation.assistant import Answer, Assistant
 from docrag.generation.prompt import render_sources
 from docrag.ingest.pipeline import read_chunks
-from docrag.llm import make_client
+from docrag.llm import LLMClient, make_client
 from docrag.llm.cache import CachedLLM
 from docrag.llm.openai_compat import QuotaExhaustedError
 from docrag.retrieval.retriever import RetrievedChunk, Retriever
@@ -112,6 +113,7 @@ def run_fingerprint(
         "provider": settings.llm_provider,
         "generator_model": settings.generator_model,
         "judge_model": settings.judge_model,
+        "judge_reasoning_effort": settings.judge_reasoning_effort,
         "prompts": prompts,
         "configs": [c.model_dump(mode="json") for c in configs],
     }
@@ -178,6 +180,7 @@ def run_eval(
     rcfg: RetrievalConfig | None = None,
     gcfg: GenerationConfig | None = None,
     log: Callable[[str], None] = print,
+    wait_on_quota: bool = False,
 ) -> Path:
     configs = configs or DEFAULT_CONFIGS
     rcfg = rcfg or cfg.retrieval
@@ -196,8 +199,11 @@ def run_eval(
 
     cache = settings.cache_dir / "llm_cache.sqlite"
     gen_llm = CachedLLM(make_client(settings.generator_model, settings), cache)
-    judge_llm = CachedLLM(make_client(settings.judge_model, settings), cache)
+    judge_llm = CachedLLM(
+        make_client(settings.judge_model, settings, settings.judge_reasoning_effort or None), cache
+    )
     retriever = Retriever(cfg, rcfg, settings)
+    retriever.retrieve("warm-up query", RetrievalMode.HYBRID_RERANK)  # load models before timing
     log(f"Run dir: {run_dir.relative_to(PROJECT_ROOT)}  ({len(questions)} {split} questions)")
     try:
         for ec in configs:
@@ -209,22 +215,20 @@ def run_eval(
             todo = [q for q in questions if q.id not in done]
             log(f"[{ec.name}] {len(done)} done, {len(todo)} to go")
             for i, q in enumerate(todo, 1):
-                ans = assistant.answer(q.question, ec.mode)
-                rec = _record(q, ec, gold[q.id], ans.retrieved, ans)
-                if not ans.abstained:
-                    jr = judge_answer(
-                        judge_llm,
-                        question=q.question,
-                        expected_behavior=_expected_text(q.expected),
-                        reference=q.reference_answer or "",
-                        context=render_sources(ans.retrieved),
-                        answer=ans.text,
-                    )
-                    rec.verdict = jr.verdict
-                    rec.judge_error = jr.error
-                    rec.judge_tokens = (
-                        (jr.call.input_tokens + jr.call.output_tokens) if jr.call else 0
-                    )
+                while True:
+                    try:
+                        rec = _answer_and_judge(q, ec, gold[q.id], assistant, judge_llm)
+                        break
+                    except QuotaExhaustedError as e:
+                        if not wait_on_quota:
+                            raise
+                        # Completed LLM calls are cached, so retrying the question is free.
+                        wait = e.retry_after_s + 30
+                        log(
+                            f"[{ec.name}] {e.model} daily quota used up; "
+                            f"sleeping {wait / 60:.0f} min"
+                        )
+                        time.sleep(wait)
                 with open(out, "a", encoding="utf-8", newline="\n") as f:
                     f.write(rec.model_dump_json() + "\n")
                 if i % 10 == 0:
@@ -238,6 +242,30 @@ def run_eval(
             f"judge {judge_llm.hits} hits / {judge_llm.misses} calls"
         )
     return run_dir
+
+
+def _answer_and_judge(
+    q: EvalQuestion,
+    ec: EvalConfig,
+    gold: list[set[str]],
+    assistant: Assistant,
+    judge_llm: LLMClient,
+) -> Record:
+    ans = assistant.answer(q.question, ec.mode)
+    rec = _record(q, ec, gold, ans.retrieved, ans)
+    if not ans.abstained:
+        jr = judge_answer(
+            judge_llm,
+            question=q.question,
+            expected_behavior=_expected_text(q.expected),
+            reference=q.reference_answer or "",
+            context=render_sources(ans.retrieved),
+            answer=ans.text,
+        )
+        rec.verdict = jr.verdict
+        rec.judge_error = jr.error
+        rec.judge_tokens = (jr.call.input_tokens + jr.call.output_tokens) if jr.call else 0
+    return rec
 
 
 def _expected_text(e: Expected) -> str:

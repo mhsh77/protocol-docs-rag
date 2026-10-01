@@ -106,11 +106,95 @@ def review_sheet(
     typer.echo(f"{len(flagged)} lint flags; review sheet -> {out.relative_to(PROJECT_ROOT)}")
 
 
+@app.command("judge-sheet")
+def judge_sheet(
+    run: Path = typer.Argument(..., help="Run directory to sample judged answers from."),
+    n: int = typer.Option(20, help="Number of items."),
+) -> None:
+    """Write a 20-item judge spot-check sheet (no domain knowledge needed)."""
+    from docrag.eval.judge_check import render_sheet, sample_for_review
+    from docrag.eval.report import load_records
+
+    recs = [r for rs in load_records(run).values() for r in rs]
+    out = run / "judge_spot_check.md"
+    out.write_text(render_sheet(sample_for_review(recs, n)), encoding="utf-8")
+    typer.echo(f"Sheet -> {out}")
+
+
+@app.command("judge-agreement")
+def judge_agreement(
+    run: Path = typer.Argument(..., help="Run directory with a filled sheet."),
+) -> None:
+    """Report agreement between the filled spot-check sheet and the LLM judge."""
+    from docrag.eval.judge_check import agreement
+    from docrag.eval.report import load_records
+
+    recs = [r for rs in load_records(run).values() for r in rs]
+    res = agreement(run / "judge_spot_check.md", recs)
+    (run / "judge_agreement.json").write_text(res.model_dump_json(indent=2), encoding="utf-8")
+    typer.echo(f"{res.n} items: agreement {res.agreement:.0%}, Cohen's kappa {res.kappa:.2f}")
+    for item, human, judge in res.disagreements:
+        typer.echo(f"  {item}: reviewer {human}, judge {judge}")
+
+
+@app.command("tune-threshold")
+def tune_threshold(
+    run: Path = typer.Argument(..., help="Dev-split run directory with hybrid_rerank records."),
+    max_false_abstention: float = typer.Option(0.10, help="Cap on wrongly declined answerables."),
+) -> None:
+    """Pick the reranker-score abstention gate on the DEV split and document the sweep."""
+    from docrag.eval.report import load_records
+    from docrag.eval.threshold import best_threshold, sweep
+
+    recs = [r for r in load_records(run).get("hybrid_rerank", []) if r.split == "dev"]
+    if not recs:
+        raise typer.BadParameter("no dev-split hybrid_rerank records in that run")
+    best = best_threshold(recs, max_false_abstention)
+    points = sorted(
+        sweep(recs, max_false_abstention), key=lambda p: (p.threshold is not None, p.threshold or 0)
+    )
+    lines = [
+        "# Abstention threshold (retrieval-score gate)",
+        "",
+        f"Tuned on the **dev split only** ({len(recs)} questions, run `{run.name}`): "
+        "abstain without",
+        "calling the LLM when the top reranker score is below the threshold. Objective: maximise",
+        "correct abstention minus false abstention, with false abstention <= "
+        f"{max_false_abstention:.0%}.",
+        "",
+        "| Threshold | Correct abstention | False abstention |",
+        "|---|---|---|",
+    ]
+    seen: set[tuple[float, float]] = set()
+    for p in points:
+        key = (round(p.correct_abstention, 4), round(p.false_abstention, 4))
+        if key in seen and p.threshold is not None:
+            continue
+        seen.add(key)
+        t = "none (model only)" if p.threshold is None else f"{p.threshold:.3f}"
+        lines.append(f"| {t} | {p.correct_abstention:.1%} | {p.false_abstention:.1%} |")
+    chosen = "none" if best.threshold is None else f"{best.threshold:.3f}"
+    lines += [
+        "",
+        f"**Chosen: {chosen}** (correct abstention {best.correct_abstention:.1%}, "
+        f"false abstention {best.false_abstention:.1%} on dev).",
+        "",
+        "Set it as `generation.min_rerank_score` in `config/uniswap.yaml`. With few dev",
+        "questions this is a coarse estimate; the test split measures it out of sample.",
+    ]
+    out = PROJECT_ROOT / "docs" / "abstention-threshold.md"
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    typer.echo("\n".join(lines))
+
+
 @app.command("eval")
 def eval_cmd(
     config: Path | None = ConfigOpt,
     split: str = typer.Option("test", help="test | dev | all"),
     only: str = typer.Option("", help="Comma-separated config names (default: all four)."),
+    wait_on_quota: bool = typer.Option(
+        False, help="On a daily-quota stop, sleep until the provider resets and continue."
+    ),
 ) -> None:
     """Run the full evaluation (resumable) and write the results table."""
     from docrag.eval.report import write_report
@@ -122,7 +206,13 @@ def eval_cmd(
         names = {n.strip() for n in only.split(",")}
         configs = [c for c in DEFAULT_CONFIGS if c.name in names]
     run_dir = run_eval(
-        cfg, Settings(), QUESTIONS_PATH, split=split, configs=configs, log=typer.echo
+        cfg,
+        Settings(),
+        QUESTIONS_PATH,
+        split=split,
+        configs=configs,
+        log=typer.echo,
+        wait_on_quota=wait_on_quota,
     )
     write_report(run_dir, split)
     typer.echo((run_dir / "results.md").read_text(encoding="utf-8"))

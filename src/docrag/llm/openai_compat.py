@@ -34,6 +34,7 @@ class OpenAICompatClient:
         max_retries: int = 6,
         timeout_s: float = 120.0,
         max_wait_s: float = 300.0,
+        reasoning_effort: str | None = None,
     ) -> None:
         self.model = model
         # SDK retries are disabled so that all retry/backoff behaviour lives here.
@@ -43,6 +44,8 @@ class OpenAICompatClient:
         self._max_retries = max_retries
         self._max_wait_s = max_wait_s
         self._max_json_retries = 2
+        # For reasoning models (e.g. gpt-oss): "low" | "medium" | "high"; None = provider default.
+        self._reasoning_effort = reasoning_effort
 
     def generate(
         self,
@@ -87,6 +90,7 @@ class OpenAICompatClient:
                     temperature=temperature,
                     max_tokens=max_output_tokens,
                     response_format=response_format,
+                    reasoning_effort=self._reasoning_effort or omit,  # type: ignore[arg-type]
                 )
             except openai.BadRequestError as e:
                 # Groq validates JSON mode server-side and rejects invalid/truncated JSON with
