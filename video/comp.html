@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Uniswap Docs Assistant: showcase film</title>
+<!--
+  Showcase film composition. Every pixel is a pure function of time: window.__seek(t).
+  Preview: open with ?play (real time) or ?t=12.5 (pinned frame). Rendered by video/render.py.
+  Copy and numbers come from the evaluation run eval/runs/run-8726a14b6f (see video/README.md).
+-->
+<style>
+  @font-face { font-family: "Serif"; src: url("fonts/InstrumentSerif-Regular.ttf"); }
+  @font-face { font-family: "Serif"; font-style: italic; src: url("fonts/InstrumentSerif-Italic.ttf"); }
+  @font-face { font-family: "Sans"; src: url("fonts/Inter-Variable.ttf"); font-weight: 100 900; }
+  @font-face { font-family: "Mono"; src: url("fonts/JetBrainsMono-Variable.ttf"); font-weight: 100 800; }
+
+  :root {
+    --bg: #0d0c0b; --ink: #f3efe7; --mute: #8e887e; --faint: #3a3631;
+    --amber: #f2b33d; --coral: #e8664f; --card: #171513; --line: #2a2723;
+  }
+  html, body { margin: 0; background: var(--bg); }
+  #frame { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg);
+           color: var(--ink); font-family: "Sans"; }
+  #stage { position: absolute; inset: 0; transform-origin: 0 0; }
+  .abs { position: absolute; }
+  .center { left: 0; width: 1920px; text-align: center; }
+  .mono { font-family: "Mono"; }
+  .serif { font-family: "Serif"; font-weight: 400; letter-spacing: -0.01em; }
+  .mask { overflow: hidden; display: block; padding-bottom: 0.08em; }
+  .mask > span { display: inline-block; will-change: transform; }
+  .tag { font-family: "Mono"; font-size: 21px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
+  .bubble { background: var(--card); border: 1px solid var(--line); border-radius: 22px;
+            padding: 28px 38px; font-size: 40px; line-height: 1.36; color: var(--ink); box-sizing: border-box; }
+  .w { display: inline-block; white-space: pre; }
+  .chip { display: inline-block; font-family: "Mono"; font-weight: 600; color: #1a1306; background: var(--amber);
+          border-radius: 9px; padding: 0 10px; font-size: 0.78em; line-height: 1.35; transform-origin: 50% 60%; }
+  .caret { display: inline-block; width: 0.55em; height: 1.05em; background: var(--amber); vertical-align: -0.18em; margin-left: 2px; }
+  #grain, #vignette { position: absolute; inset: 0; pointer-events: none; }
+  #vignette { background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%); }
+  #grain { opacity: 0.06; mix-blend-mode: screen; }
+  .bar { position: absolute; height: 54px; border-radius: 6px; }
+  .num { font-variant-numeric: tabular-nums lining-nums; }
+</style>
+</head>
+<body>
+<div id="frame">
+  <div id="stage">
+    <!-- S1–S3: same question, naive vs grounded -->
+    <div id="q1tag" class="abs tag center" style="top:268px">a question the docs can't answer</div>
+    <div id="q1" class="abs mono center" style="top:314px;font-size:36px;line-height:1.45;color:var(--ink)">
+      <div style="width:1400px;margin:0 auto;text-align:center"><span id="q1text"></span><span id="q1caret" class="caret"></span><span id="q1rest" style="color:transparent"></span></div>
+    </div>
+
+    <div id="naive" class="abs" style="left:260px;top:500px;width:1400px">
+      <div class="tag" id="naiveTag" style="margin:0 0 12px 6px">naive RAG</div>
+      <div class="bubble" id="naiveBubble"></div>
+      <div id="naiveVerdict" class="mono" style="margin:16px 0 0 6px;font-size:27px;color:var(--coral)">✕ invented: the docs never say this</div>
+    </div>
+
+    <div id="grounded" class="abs" style="left:260px;top:720px;width:1400px">
+      <div class="tag" id="groundedTag" style="margin:0 0 12px 6px;color:var(--amber)">this assistant</div>
+      <div class="bubble" id="groundedBubble" style="border-color:#4a3a1c"></div>
+      <div id="groundedVerdict" class="mono" style="margin:16px 0 0 6px;font-size:27px;color:var(--amber)">✓ declined instead of guessing</div>
+    </div>
+
+    <!-- S4: statement -->
+    <div id="s4" class="abs serif center" style="top:350px;font-size:132px;line-height:1.02">
+      <span class="mask"><span id="s4a">It knows what</span></span>
+      <span class="mask"><span id="s4b">it <i>doesn’t know.</i></span></span>
+    </div>
+
+    <!-- S5: cited answer -->
+    <div id="q2" class="abs mono center" style="top:380px;font-size:40px;color:var(--ink)">
+      <span id="q2text"></span><span id="q2caret" class="caret"></span><span id="q2rest" style="color:transparent"></span>
+    </div>
+    <div id="a2" class="abs center" style="top:480px">
+      <div class="bubble" id="a2Bubble" style="display:inline-block;font-size:50px;padding:34px 46px"></div>
+    </div>
+
+    <!-- S6: the source, from the real recording -->
+    <div id="cap" class="abs serif" style="left:190px;top:330px;font-size:100px;line-height:1.02">
+      <span class="mask"><span id="capa">Every answer</span></span>
+      <span class="mask"><span id="capb"><i>cites its source.</i></span></span>
+      <div id="steps" class="mono" style="margin-top:48px;font-size:28px;line-height:1.9;color:var(--mute)"></div>
+    </div>
+  </div>
+
+  <!-- the [1] chip that carries the film (outside the camera stage) -->
+  <div id="flychip" class="abs chip" style="font-size:40px;left:0;top:0">[1]</div>
+  <!-- recording card -->
+  <div id="card" class="abs" style="border-radius:28px;overflow:hidden;background:#000;box-shadow:0 40px 120px rgba(0,0,0,0.6),0 0 0 1px #2a2723">
+    <canvas id="cardc" width="784" height="1120" style="display:block;width:100%;height:100%"></canvas>
+  </div>
+
+  <!-- S8: evidence -->
+  <div id="evTitle" class="abs serif" style="left:200px;top:170px;font-size:76px">
+    <span class="mask"><span id="evTitleIn">Measured, <i>not claimed.</i></span></span>
+  </div>
+  <div id="bigNum" class="abs serif num" style="left:190px;top:370px;font-size:330px;line-height:1;white-space:nowrap">
+    <span id="bigA">80</span><span id="bigB" style="color:var(--amber)"></span>
+  </div>
+  <div id="bigLabel" class="abs" style="left:760px;top:560px;font-size:48px;line-height:1.25;color:var(--ink);width:820px"></div>
+
+  <div id="bars" class="abs" style="left:200px;top:360px;width:1520px">
+    <div class="tag" style="font-size:20px;margin-bottom:46px">unsupported claims in answers</div>
+    <div style="position:relative;height:96px">
+      <div style="position:absolute;left:0;top:8px;font-size:40px;color:var(--mute)">Naive RAG</div>
+      <div id="barN" class="bar" style="left:330px;top:0;background:#4a4540"></div>
+      <div id="valN" class="abs serif num" style="top:-10px;font-size:64px;color:var(--ink)"></div>
+    </div>
+    <div style="position:relative;height:96px;margin-top:22px">
+      <div style="position:absolute;left:0;top:8px;font-size:40px;color:var(--ink)">This assistant</div>
+      <div id="barA" class="bar" style="left:330px;top:0;background:var(--amber)"></div>
+      <div id="valA" class="abs serif num" style="top:-10px;font-size:64px;color:var(--amber)"></div>
+    </div>
+    <div id="foot" class="mono" style="margin-top:80px;font-size:23px;color:var(--mute);line-height:1.6">
+      80 held-out questions · claims graded by an LLM judge (80% agreement with a blind regrade)<br>
+      small sample: see the repo for confidence intervals
+    </div>
+  </div>
+
+  <!-- S9: staccato hits -->
+  <div id="hit" class="abs serif center" style="top:400px;font-size:170px;line-height:1"></div>
+
+  <!-- S10: lockup -->
+  <div id="lock" class="abs center">
+    <div class="serif" style="font-size:124px;line-height:1"><span class="mask"><span id="lockT">Uniswap Docs Assistant</span></span></div>
+    <div id="lockS" style="margin-top:30px;font-size:38px;color:var(--mute)">Evaluated RAG over protocol docs · live on Telegram</div>
+    <div id="lockL" class="mono" style="margin-top:62px;font-size:30px;color:var(--ink)">t.me/Uniswapdocsqabot <span style="color:var(--faint)">&nbsp;·&nbsp;</span> github.com/mhsh77/protocol-docs-rag</div>
+    <div id="lockU" style="margin-top:40px;font-size:22px;color:#625c53">Unofficial project · not affiliated with Uniswap Labs</div>
+  </div>
+
+  <div id="vignette"></div>
+  <canvas id="grain" width="960" height="540" style="width:1920px;height:1080px"></canvas>
+  <div id="black" class="abs" style="inset:0;background:#000;opacity:0"></div>
+</div>
+
+<script>
+// ---------- copy (verbatim from the eval records / bot) ----------
+const Q1 = "Is there a per‑transaction limit on the number of tokens that can be minted in the Deploy SuperchainERC20 mint step?";
+const NAIVE = "No, there is no per-transaction limit on the number of tokens that can be minted in the Deploy SuperchainERC20 mint step. …";
+const GROUNDED = "The documentation provided does not cover a per-transaction limit on the number of tokens that can be minted in the Deploy SuperchainERC20 mint step.";
+const Q2 = "How many hooks can a Uniswap v4 pool have?";
+const A2 = "Every Uniswap v4 pool can have one hook";
+const STEPS = ["1 · the answer, with its citation", "2 · tap the source", "3 · land on the sentence it quoted"];
+const HITS = [["Hybrid search.", 1104 / 30], ["Reranking.", 1117 / 30], ["Cited answers.", 1130 / 30], ["Honest refusals.", 1143 / 30]];
+const DURATION = 43.0;
+
+// ---------- time helpers ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, k) => a + (b - a) * k;
+const E = {
+  expoOut: k => k >= 1 ? 1 : 1 - Math.pow(2, -10 * k),
+  expoInOut: k => k <= 0 ? 0 : k >= 1 ? 1 : k < .5 ? Math.pow(2, 20 * k - 10) / 2 : (2 - Math.pow(2, -20 * k + 10)) / 2,
+  cubicOut: k => 1 - Math.pow(1 - k, 3),
+  cubicIn: k => k * k * k,
+  sineInOut: k => -(Math.cos(Math.PI * k) - 1) / 2,
+  backOut: k => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); },
+};
+const $ = id => document.getElementById(id);
+const show = (el, on) => { el.style.visibility = on ? "visible" : "hidden"; };
+
+// enter/exit envelope: 0 before, ease to 1 over [a, a+din], hold, ease to 0 over [b-dout, b]
+function env(t, a, b, din = .5, dout = .4, ein = E.expoOut, eout = E.cubicIn) {
+  if (t < a || t > b) return 0;
+  return Math.min(ein(seg(t, a, a + din)), 1 - eout(seg(t, b - dout, b)));
+}
+// masked line rise: returns translateY% for an inner span
+function rise(t, a, b, stagger = 0, din = .75, dout = .45) {
+  if (t < a + stagger) return 110;
+  const k = E.expoOut(seg(t, a + stagger, a + stagger + din));
+  const out = E.cubicIn(seg(t, b - dout, b));
+  return (1 - k) * 110 - out * 110;
+}
+
+// ---------- word splitting (screen-reader safe) ----------
+function splitWords(el, text, extraHTML = "") {
+  el.setAttribute("aria-label", text);
+  el.innerHTML = text.split(" ").map(w => `<span class="w" aria-hidden="true">${w} </span>`).join("") + extraHTML;
+  return [...el.querySelectorAll(".w")];
+}
+const naiveWords = splitWords($("naiveBubble"), NAIVE);
+const groundWords = splitWords($("groundedBubble"), GROUNDED);
+const a2Words = splitWords($("a2Bubble"), A2, '<span class="w" aria-hidden="true"> </span><span id="a2chip" class="chip">[1]</span><span class="w">.</span>');
+$("steps").innerHTML = STEPS.map((s, i) => `<div id="step${i}">${s}</div>`).join("");
+
+function wordsIn(words, t, a, per = 0.045, dur = .5) {
+  words.forEach((w, i) => {
+    const k = E.expoOut(seg(t, a + i * per, a + i * per + dur));
+    w.style.opacity = k;
+    w.style.filter = k < 1 ? `blur(${(1 - k) * 10}px)` : "none";
+    w.style.transform = `translateY(${(1 - k) * 14}px)`;
+  });
+}
+
+// ---------- recording frames ----------
+const CLIPS = { A: 76, B: 59, C: 155 };
+const FPS = 30;
+const frames = {};
+let pending = 0;
+for (const [name, n] of Object.entries(CLIPS)) {
+  frames[name] = [];
+  for (let i = 1; i <= n; i++) {
+    const img = new Image();
+    pending++;
+    img.onload = img.onerror = () => { pending--; };
+    img.src = `assets/rec/${name}/${String(i).padStart(4, "0")}.jpg`;
+    frames[name].push(img);
+  }
+}
+// crop windows in source-frame pixels (784 x 1696 after 2x upscale)
+const CROP = { A: { y: 60, h: 900 }, B: { y: 60, h: 900 }, C: { y: 192, h: 1120 } };
+const cardc = $("cardc"), cctx = cardc.getContext("2d");
+// "Every pool can have / one hook" in the last docs frame (source-frame pixels)
+const HL = [[442, 1072, 322, 46], [26, 1136, 150, 46]];
+
+// clip timeline
+const T_A = 16.35, T_B = T_A + CLIPS.A / FPS, T_C = T_B + CLIPS.B / FPS, T_CEND = T_C + CLIPS.C / FPS;
+
+// visible crop height: 900 for the chat clips, growing to 1120 as the docs page opens
+const cropH = t => t < T_C ? 900 : lerp(900, 1120, E.expoInOut(seg(t, T_C, T_C + .55)));
+
+function drawCard(t) {
+  let name, idx;
+  if (t < T_B) { name = "A"; idx = Math.floor((t - T_A) * FPS); }
+  else if (t < T_C) { name = "B"; idx = Math.floor((t - T_B) * FPS); }
+  else { name = "C"; idx = Math.floor((t - T_C) * FPS); }
+  const arr = frames[name];
+  idx = Math.max(0, Math.min(arr.length - 1, idx));
+  const c = CROP[name];
+  const h = Math.round(cropH(t));
+  if (cardc.height !== h) cardc.height = h;
+  cctx.fillStyle = "#000"; cctx.fillRect(0, 0, 784, h);
+  cctx.drawImage(arr[idx], 0, c.y, 784, h, 0, 0, 784, h);
+  if (name === "C") {   // highlight the quoted sentence as the page settles
+    const k = E.cubicOut(seg(t, T_CEND - 0.9, T_CEND - 0.3));
+    if (k > 0) {
+      cctx.save();
+      cctx.globalCompositeOperation = "screen";
+      cctx.fillStyle = `rgba(242,179,61,${0.42 * k})`;
+      for (const [x, y, w, hh] of HL) {
+        const ww = w * E.expoOut(seg(t, T_CEND - 0.9, T_CEND - 0.2));
+        cctx.beginPath(); cctx.roundRect(x - 6, y - c.y - 4, ww + 12, hh + 8, 8); cctx.fill();
+      }
+      cctx.restore();
+    }
+  }
+}
+
+// ---------- grain (deterministic, re-seeded per frame) ----------
+const gctx = $("grain").getContext("2d");
+const gimg = gctx.createImageData(960, 540);
+function grain(frameNo) {
+  let s = (frameNo * 2654435761) >>> 0;
+  const d = gimg.data;
+  for (let i = 0; i < d.length; i += 4) {
+    s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0;
+    const v = s & 255;
+    d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
+  }
+  gctx.putImageData(gimg, 0, 0);
+}
+
+// ---------- the timeline ----------
+function seek(t) {
+  // S1: type the first question
+  const q1on = env(t, 0.15, 10.4, .3, .45);
+  $("q1").style.opacity = q1on; $("q1tag").style.opacity = q1on * E.cubicOut(seg(t, .15, .8));
+  const n1 = Math.floor(seg(t, 0.45, 3.45) * Q1.length);
+  $("q1text").textContent = Q1.slice(0, n1);
+  $("q1rest").textContent = Q1.slice(n1);
+  $("q1caret").style.opacity = (t < 3.6 ? 1 : (Math.floor(t * 2.2) % 2 ? 0 : 1)) * (t < 4.4 ? 1 : 0);
+
+  // S2: naive answer + verdict
+  const nOn = env(t, 3.75, 10.45, .2, .5);
+  $("naive").style.opacity = nOn; $("naiveTag").style.opacity = E.cubicOut(seg(t, 3.75, 4.2));
+  wordsIn(naiveWords, t, 3.85, .03);
+  const vk = E.backOut(seg(t, 5.55, 6.05));
+  $("naiveVerdict").style.opacity = clamp(seg(t, 5.55, 5.8));
+  $("naiveVerdict").style.transform = `translateX(${(1 - vk) * -20}px)`;
+  const flag = E.cubicOut(seg(t, 5.55, 6.0));
+  $("naiveBubble").style.borderColor = `rgba(232,102,79,${0.15 + 0.6 * flag})`;
+  $("naiveBubble").style.color = `rgba(243,239,231,${1 - 0.4 * flag})`;
+  // S3: naive steps back, grounded answer arrives
+  const back = E.expoInOut(seg(t, 6.9, 7.6));
+  $("naive").style.transform = `translateY(${-back * 150}px) scale(${1 - back * 0.08})`;
+  $("naive").style.transformOrigin = "50% 0";
+  $("naive").style.filter = `opacity(${1 - back * 0.45})`;
+  $("q1").style.transform = $("q1tag").style.transform = `translateY(${-back * 150}px)`;
+  const gOn = env(t, 7.25, 10.45, .25, .5);
+  $("grounded").style.opacity = gOn;
+  $("grounded").style.transform = `translateY(${(1 - E.expoOut(seg(t, 7.25, 8.0))) * 40 - back * 110}px)`;
+  wordsIn(groundWords, t, 7.45, .028);
+  $("groundedVerdict").style.opacity = clamp(seg(t, 8.75, 9.0));
+  $("groundedVerdict").style.transform = `translateX(${(1 - E.backOut(seg(t, 8.75, 9.25))) * -20}px)`;
+
+  // S4: statement
+  show($("s4"), t > 10.2 && t < 12.95);
+  $("s4a").style.transform = `translateY(${rise(t, 10.35, 12.95, 0)}%)`;
+  $("s4b").style.transform = `translateY(${rise(t, 10.35, 12.95, .09)}%)`;
+
+  // S5: second question + cited answer
+  const q2On = env(t, 12.95, 15.75, .2, .5);
+  $("q2").style.opacity = q2On;
+  const n2 = Math.floor(seg(t, 13.05, 14.15) * Q2.length);
+  $("q2text").textContent = Q2.slice(0, n2);
+  $("q2rest").textContent = Q2.slice(n2);
+  $("q2caret").style.opacity = t < 14.6 ? (t < 14.2 ? 1 : (Math.floor(t * 2.2) % 2 ? 0 : 1)) : 0;
+  const a2On = env(t, 14.25, 15.85, .2, .45);
+  $("a2").style.opacity = a2On;
+  wordsIn(a2Words, t, 14.3, .04);
+  const a2chip = $("a2chip");
+  const ck = E.backOut(seg(t, 14.75, 15.15));
+  a2chip.style.transform = `scale(${t < 14.75 ? 0 : ck})`;
+  a2chip.style.opacity = t < 15.55 ? 1 : 0;
+
+  // camera: push toward the chip, then release
+  const push = E.expoInOut(seg(t, 15.0, 15.75)) * (1 - E.expoInOut(seg(t, 15.75, 16.45)));
+  const cr = a2chip.getBoundingClientRect();
+  const fx = (cr.left + cr.right) / 2, fy = (cr.top + cr.bottom) / 2;
+  const z = 1 + 0.55 * push;
+  $("stage").style.transform = push > 0 ? `translate(${fx * (1 - z)}px, ${fy * (1 - z)}px) scale(${z})` : "none";
+
+  // the flying chip: answer -> card -> evidence title -> lockup
+  const chip = $("flychip");
+  const card = $("card");
+  let chipVisible = false, cardVisible = false;
+  // S6 card geometry: fixed width, height follows the visible crop of the recording
+  const W = 610, H = W * cropH(t) / 784;
+  const X = 1110, Y = (1080 - H) / 2;
+  if (t >= 15.55 && t < 16.45) {        // chip expands into the card
+    const k = E.expoInOut(seg(t, 15.55, 16.45));
+    const s = { x: fx - 34, y: fy - 26, w: 68, h: 52 };
+    cardVisible = true;
+    Object.assign(card.style, { left: lerp(s.x, X, k) + "px", top: lerp(s.y, Y, k) + "px",
+      width: lerp(s.w, W, k) + "px", height: lerp(s.h, H, k) + "px", borderRadius: lerp(10, 28, k) + "px" });
+    card.style.background = "#000";
+    card.style.boxShadow = `0 40px 120px rgba(0,0,0,${0.6 * k}),0 0 0 ${lerp(3, 1, k)}px rgba(242,179,61,${1 - 0.85 * k})`;
+    $("cardc").style.opacity = E.cubicOut(seg(t, 15.75, 16.3));
+    drawCard(Math.max(t, T_A));
+  } else if (t >= 16.45 && t < 26.7) {  // card holds and plays the recording
+    cardVisible = true;
+    const settle = 1 - E.cubicOut(seg(t, 16.45, 17.4));
+    Object.assign(card.style, { left: X + "px", top: Y + settle * 6 + "px", width: W + "px", height: H + "px", borderRadius: "28px", background: "#000",
+      boxShadow: "0 40px 120px rgba(0,0,0,0.6),0 0 0 1px rgba(242,179,61,0.15)" });
+    $("cardc").style.opacity = 1;
+    drawCard(t);
+  } else if (t >= 26.7 && t < 27.55) {   // card collapses back into the chip, chip flies to the title
+    const k = E.expoInOut(seg(t, 26.7, 27.3));
+    const target = { x: 200, y: 172, w: 84, h: 62 };
+    cardVisible = k < 1;
+    Object.assign(card.style, { left: lerp(X, target.x, k) + "px", top: lerp(Y, target.y, k) + "px",
+      width: lerp(W, target.w, k) + "px", height: lerp(H, target.h, k) + "px", borderRadius: lerp(28, 12, k) + "px" });
+    card.style.background = "#000";
+    card.style.boxShadow = `0 0 0 ${lerp(1, 3, k)}px rgba(242,179,61,${0.15 + 0.85 * k})`;
+    $("cardc").style.opacity = 1 - E.cubicOut(seg(t, 26.7, 27.0));
+    chipVisible = k > .85;
+  }
+  show(card, cardVisible);
+
+  // S6 caption + steps
+  show($("cap"), t > 16.4 && t < 27.0);
+  $("capa").style.transform = `translateY(${rise(t, 16.55, 26.95, 0)}%)`;
+  $("capb").style.transform = `translateY(${rise(t, 16.55, 26.95, .1)}%)`;
+  const stepIdx = t < T_B ? 0 : t < T_C ? 1 : 2;
+  STEPS.forEach((_, i) => {
+    const el = $("step" + i);
+    const appear = [17.35, T_B, T_C][i];
+    const on = E.cubicOut(seg(t, appear, appear + .35)) * (1 - E.cubicIn(seg(t, 26.4, 26.8)));
+    el.style.opacity = on * (i === stepIdx ? 1 : .38);
+    el.style.color = i === stepIdx ? "var(--ink)" : "var(--mute)";
+    el.style.transform = `translateX(${(1 - E.expoOut(seg(t, appear, appear + .5))) * -16}px)`;
+  });
+
+  // S8: evidence title with the chip as its mark
+  const evOn = t > 27.2 && t < 36.75;
+  show($("evTitle"), evOn);
+  $("evTitleIn").style.transform = `translateY(${rise(t, 27.35, 36.75, 0)}%)`;
+  $("evTitle").style.paddingLeft = "112px";
+  if (t >= 27.3 && t < 36.75) chipVisible = true;
+
+  // chip placement
+  if (chipVisible) {
+    let x = 200, y = 168, s = 1, op = 1;
+    if (t >= 36.3) op = 1 - E.cubicIn(seg(t, 36.3, 36.75));
+    Object.assign(chip.style, { left: x + "px", top: y + "px", opacity: op, transform: `scale(${s})` });
+  }
+  show(chip, chipVisible);
+
+  // big numbers: 80 -> 23 -> 23/23
+  const numOn = t > 28.2 && t < 34.0;
+  show($("bigNum"), numOn); show($("bigLabel"), numOn);
+  if (numOn) {
+    const out = E.cubicIn(seg(t, 33.55, 34.0));
+    $("bigNum").style.opacity = $("bigLabel").style.opacity = 1 - out;
+    let a, label;
+    if (t < 30.35) { a = Math.round(80 * E.expoOut(seg(t, 28.3, 29.1))); label = "held-out test questions"; }
+    else { a = Math.round(lerp(80, 23, E.expoOut(seg(t, 30.35, 30.95)))); label = "of them can’t be answered from the docs"; }
+    if (t >= 31.95) label = "declined. <span style='color:var(--amber)'>Every time.</span>";
+    $("bigA").textContent = a;
+    const sk = E.expoOut(seg(t, 31.9, 32.4));
+    $("bigB").textContent = t >= 31.9 ? "/23" : "";
+    $("bigB").style.opacity = sk;
+    const lk = (lbl0, t0) => E.expoOut(seg(t, t0, t0 + .5));
+    const lt = t < 30.35 ? 28.5 : t < 31.95 ? 30.45 : 32.05;
+    $("bigLabel").innerHTML = label;
+    $("bigLabel").style.opacity = (1 - out) * lk(label, lt);
+    $("bigLabel").style.transform = `translateY(${(1 - lk(label, lt)) * 18}px)`;
+    $("bigLabel").style.left = $("bigNum").getBoundingClientRect().right + 56 + "px";
+    $("bigNum").style.transform = `translateY(${(1 - E.expoOut(seg(t, 28.2, 28.9))) * 40}px)`;
+  }
+
+  // bars: 5.0% vs 0.8%
+  const barsOn = t > 33.9 && t < 36.75;
+  show($("bars"), barsOn);
+  if (barsOn) {
+    const op = E.cubicOut(seg(t, 33.9, 34.3)) * (1 - E.cubicIn(seg(t, 36.3, 36.75)));
+    $("bars").style.opacity = op;
+    const PX = 180;   // px per percentage point
+    const kn = E.expoOut(seg(t, 34.2, 35.0)), ka = E.expoOut(seg(t, 34.45, 35.25));
+    $("barN").style.width = 5.0 * PX * kn + "px";
+    $("barA").style.width = Math.max(6, 0.8 * PX * ka) + "px";
+    $("valN").style.left = 330 + 5.0 * PX * kn + 26 + "px"; $("valN").textContent = (5.0 * kn).toFixed(1) + "%";
+    $("valA").style.left = 330 + 0.8 * PX * ka + 26 + "px"; $("valA").textContent = (0.8 * ka).toFixed(1) + "%";
+    $("foot").style.opacity = E.cubicOut(seg(t, 35.0, 35.5));
+  }
+
+  // S9: staccato hits (hard cuts by design)
+  let hit = "";
+  for (const [w, a] of HITS) if (t >= a && t < a + 13 / 30) hit = w;
+  $("hit").textContent = hit;
+  if (hit) {
+    const a = HITS.find(h => h[0] === hit)[1];
+    $("hit").style.transform = `scale(${1.04 - 0.04 * E.expoOut(seg(t, a, a + .3))})`;
+    $("hit").style.color = hit === "Honest refusals." ? "var(--amber)" : "var(--ink)";
+  }
+
+  // S10: lockup
+  const lockOn = t > 38.45;
+  show($("lock"), lockOn);
+  $("lock").style.top = "330px";
+  $("lockT").style.transform = `translateY(${rise(t, 38.5, 99, 0)}%)`;
+  const ls = E.expoOut(seg(t, 39.05, 39.7)), ll = E.expoOut(seg(t, 39.45, 40.1)), lu = E.cubicOut(seg(t, 40.0, 40.6));
+  $("lockS").style.opacity = ls; $("lockS").style.transform = `translateY(${(1 - ls) * 16}px)`;
+  $("lockL").style.opacity = ll; $("lockL").style.transform = `translateY(${(1 - ll) * 16}px)`;
+  $("lockU").style.opacity = lu;
+
+  // fade from and to black
+  $("black").style.opacity = Math.max(1 - E.cubicOut(seg(t, 0, .35)), E.cubicIn(seg(t, DURATION - .6, DURATION)));
+  grain(Math.floor(t * 30));
+}
+
+// ---------- harness ----------
+window.__duration = DURATION;
+window.__seek = seek;
+window.__ready = false;
+// sound cues for video/sfx.py: [time, kind]
+window.__events = () => {
+  const ev = [];
+  for (let i = 0; i < Q1.length; i += 3) ev.push([0.45 + 3.0 * i / Q1.length, "key"]);
+  ev.push([3.85, "pop"], [5.55, "flag"], [7.0, "swoosh"], [7.45, "pop"], [8.75, "confirm"],
+          [10.35, "swell"]);
+  for (let i = 0; i < Q2.length; i += 3) ev.push([13.05 + 1.1 * i / Q2.length, "key"]);
+  ev.push([14.3, "pop"], [14.75, "chip"], [15.0, "swoosh"], [15.55, "open"], [T_B, "tap"], [T_C, "swoosh_soft"],
+          [T_CEND - 0.9, "confirm"], [26.7, "close"], [27.35, "swell"], [28.3, "count"], [30.35, "count"],
+          [31.9, "confirm"], [34.2, "bar"], [34.45, "bar"]);
+  for (const [, a] of HITS) ev.push([a, "hit"]);
+  ev.push([38.5, "resolve"]);
+  return ev;
+};
+const ready = Promise.all([document.fonts.ready, new Promise(res => {
+  const check = () => pending === 0 ? res() : setTimeout(check, 50); check();
+})]);
+const params = new URLSearchParams(location.search);
+ready.then(() => {
+  seek(params.has("t") ? parseFloat(params.get("t")) : 0);
+  window.__ready = true;
+  if (params.has("play")) {
+    const t0 = performance.now();
+    const loop = () => { const t = (performance.now() - t0) / 1000; seek(t % DURATION); requestAnimationFrame(loop); };
+    loop();
+  }
+});
+</script>
+</body>
+</html>

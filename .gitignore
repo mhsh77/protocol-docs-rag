@@ -22,3 +22,5 @@ logs/
 *.log
 data/processed/
 
+video/build/
+video/assets/rec/
