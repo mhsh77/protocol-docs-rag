@@ -116,8 +116,7 @@ token for the bot. Everything else (embeddings, BM25, reranker, vector store) ru
 ```bash
 uv sync
 cp .env.example .env     # add an API key (and TELEGRAM_BOT_TOKEN for the bot)
-uv run rag fetch         # download the pinned docs snapshot + manifest
-uv run rag ingest        # chunk, embed (cached), build indexes
+uv run rag ingest        # fetch the pinned docs (verified by sha256), chunk, embed, index
 uv run rag eval --wait-on-quota   # full evaluation, resumable; writes eval/runs/<run>/
 uv run rag bot           # start the Telegram bot
 uv run pytest            # tests

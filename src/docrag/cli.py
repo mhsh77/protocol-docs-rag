@@ -32,8 +32,14 @@ def fetch(config: Path | None = ConfigOpt) -> None:
 
 @app.command()
 def ingest(config: Path | None = ConfigOpt) -> None:
-    """Normalize and chunk the raw corpus into data/processed/<corpus>/chunks.jsonl."""
+    """Fetch the pinned docs if needed, then chunk, embed and index them (one command)."""
     cfg = load_pipeline_config(config)
+    problems = verify_corpus(cfg.raw_dir) if (cfg.raw_dir / "manifest.jsonl").exists() else ["x"]
+    if problems:
+        # Fresh clone: only the manifest is versioned. Fetch the same pinned commit;
+        # verification below re-checks every file's sha256 against the manifest.
+        typer.echo("Raw docs missing or incomplete; fetching the pinned snapshot ...")
+        fetch_corpus(cfg.corpus, cfg.raw_dir)
     _report_verify(cfg.raw_dir)
     chunks = build_chunks(cfg)
     write_chunks(chunks, cfg.chunks_path)
