@@ -4,8 +4,9 @@ The composition is a pure function of time (window.__seek(t)), so every frame is
 deterministic screenshot. Motion blur is a real 180-degree shutter: each output frame
 averages `--samples` captures spread over the first half of the frame interval.
 
-    uv run --with playwright --with numpy --with pillow python video/render.py --stills 1,5,9 --out stills.png
-    uv run --with playwright --with numpy --with pillow python video/render.py --out showcase.mp4 --audio sfx.wav
+    RUN="uv run --with playwright --with numpy --with pillow python video/render.py"
+    $RUN --stills 1,5,9 --out stills.png
+    $RUN --out showcase.mp4 --audio sfx.wav
 
 Uses the locally installed Chrome (`channel="chrome"`), so no browser download is needed.
 """
@@ -31,7 +32,9 @@ W, H = 1920, 1080
 
 
 def _open(p):  # type: ignore[no-untyped-def]
-    browser = p.chromium.launch(channel="chrome", headless=True, args=["--force-color-profile=srgb"])
+    browser = p.chromium.launch(
+        channel="chrome", headless=True, args=["--force-color-profile=srgb"]
+    )
     page = browser.new_page(viewport={"width": W, "height": H}, device_scale_factor=1)
     page.goto(COMP)
     page.wait_for_function("window.__ready === true", timeout=120_000)
@@ -81,8 +84,15 @@ def stills(times: list[float], out: Path) -> None:
     print(f"sheet -> {out}")
 
 
-def render(out: Path, fps: int, samples: int, workers: int, audio: Path | None,
-           start: float, end: float | None) -> None:
+def render(
+    out: Path,
+    fps: int,
+    samples: int,
+    workers: int,
+    audio: Path | None,
+    start: float,
+    end: float | None,
+) -> None:
     with sync_playwright() as p:
         browser, page = _open(p)
         duration = float(page.evaluate("window.__duration"))
@@ -96,13 +106,49 @@ def render(out: Path, fps: int, samples: int, workers: int, audio: Path | None,
     with mp.Pool(workers) as pool:
         done = sum(pool.map(_worker, [(c, fps, samples, str(tmp)) for c in chunks]))
     print(f"captured {done} frames in {time.time() - t0:.0f}s")
-    cmd = ["ffmpeg", "-v", "error", "-y", "-framerate", str(fps), "-start_number", str(frames[0]),
-           "-i", str(tmp / "%05d.png")]
+    cmd = [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-y",
+        "-framerate",
+        str(fps),
+        "-start_number",
+        str(frames[0]),
+        "-i",
+        str(tmp / "%05d.png"),
+    ]
     if audio:
-        cmd += ["-ss", f"{start:.3f}", "-i", str(audio), "-af", "loudnorm=I=-18:TP=-2:LRA=11",
-                "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-shortest"]
-    cmd += ["-c:v", "libx264", "-preset", "slow", "-crf", "16", "-pix_fmt", "yuv420p",
-            "-movflags", "+faststart", "-tune", "film", str(out)]
+        cmd += [
+            "-ss",
+            f"{start:.3f}",
+            "-i",
+            str(audio),
+            "-af",
+            "loudnorm=I=-18:TP=-2:LRA=11",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-ar",
+            "48000",
+            "-shortest",
+        ]
+    cmd += [
+        "-c:v",
+        "libx264",
+        "-preset",
+        "slow",
+        "-crf",
+        "16",
+        "-pix_fmt",
+        "yuv420p",
+        "-movflags",
+        "+faststart",
+        "-tune",
+        "film",
+        str(out),
+    ]
     subprocess.run(cmd, check=True)
     shutil.rmtree(tmp, ignore_errors=True)
     print(f"video -> {out}")

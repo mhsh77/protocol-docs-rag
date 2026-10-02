@@ -27,8 +27,14 @@ def env(n: int, attack: float, decay: float) -> np.ndarray:
     return a * np.exp(-np.maximum(t - attack, 0) / decay)
 
 
-def tone(freq: float, dur: float, attack: float = 0.005, decay: float = 0.2, shape: str = "sine",
-         glide: float = 0.0) -> np.ndarray:
+def tone(
+    freq: float,
+    dur: float,
+    attack: float = 0.005,
+    decay: float = 0.2,
+    shape: str = "sine",
+    glide: float = 0.0,
+) -> np.ndarray:
     n = int(dur * SR)
     t = np.arange(n) / SR
     f = freq * (1 + glide * (1 - np.exp(-t / 0.03)))
@@ -72,11 +78,15 @@ def key() -> np.ndarray:
 
 
 def pop() -> np.ndarray:
-    return mix(tone(620, 0.18, 0.003, 0.05, glide=0.35) * 0.8, tone(1240, 0.12, 0.002, 0.03) * 0.2) * db(-21)
+    return mix(
+        tone(620, 0.18, 0.003, 0.05, glide=0.35) * 0.8, tone(1240, 0.12, 0.002, 0.03) * 0.2
+    ) * db(-21)
 
 
 def chip() -> np.ndarray:
-    return mix(tone(1568, 0.35, 0.002, 0.09, "triangle"), 0.5 * tone(2349, 0.3, 0.002, 0.06)) * db(-24)
+    return mix(tone(1568, 0.35, 0.002, 0.09, "triangle"), 0.5 * tone(2349, 0.3, 0.002, 0.06)) * db(
+        -24
+    )
 
 
 def tap() -> np.ndarray:
@@ -116,7 +126,7 @@ def swell(dur: float = 0.9) -> np.ndarray:
 
 def count() -> np.ndarray:
     out = np.zeros(int(0.8 * SR))
-    times = 0.6 * (1 - (1 - np.linspace(0, 1, 13)) ** 2.2)   # fast, then settling
+    times = 0.6 * (1 - (1 - np.linspace(0, 1, 13)) ** 2.2)  # fast, then settling
     for i, t0 in enumerate(times):
         c = tone(1900 + 40 * i, 0.04, 0.0005, 0.008) * db(-27)
         s = int(t0 * SR)
@@ -137,14 +147,29 @@ def hit() -> np.ndarray:
 
 def resolve() -> np.ndarray:
     chord = [220.0, 277.2, 329.6, 440.0, 554.4]
-    return mix(*(tone(f, 3.4, 0.02 + 0.015 * i, 1.1, "triangle") for i, f in enumerate(chord))) / 5 * db(-15)
+    return (
+        mix(*(tone(f, 3.4, 0.02 + 0.015 * i, 1.1, "triangle") for i, f in enumerate(chord)))
+        / 5
+        * db(-15)
+    )
 
 
 PALETTE = {
-    "key": key, "pop": pop, "chip": chip, "tap": tap, "confirm": confirm, "flag": flag,
-    "swell": swell, "count": count, "bar": bar, "hit": hit, "resolve": resolve,
-    "swoosh": lambda: swoosh(0.45, True), "swoosh_soft": lambda: swoosh(0.5, True, -31),
-    "open": lambda: swoosh(0.6, True, -24), "close": lambda: swoosh(0.5, False, -25),
+    "key": key,
+    "pop": pop,
+    "chip": chip,
+    "tap": tap,
+    "confirm": confirm,
+    "flag": flag,
+    "swell": swell,
+    "count": count,
+    "bar": bar,
+    "hit": hit,
+    "resolve": resolve,
+    "swoosh": lambda: swoosh(0.45, True),
+    "swoosh_soft": lambda: swoosh(0.5, True, -31),
+    "open": lambda: swoosh(0.6, True, -24),
+    "close": lambda: swoosh(0.5, False, -25),
 }
 
 
@@ -158,8 +183,12 @@ def room(dur: float = 1.6) -> np.ndarray:
 def bed(n: int) -> np.ndarray:
     t = np.arange(n) / SR
     lfo = 0.5 + 0.5 * np.sin(2 * np.pi * 0.07 * t)
-    drone = (np.sin(2 * np.pi * 110 * t) + 0.6 * np.sin(2 * np.pi * 164.8 * t + 1.0)) * (0.6 + 0.4 * lfo)
-    air = np.fft.irfft(np.fft.rfft(rng.standard_normal(n)) / (1 + (np.fft.rfftfreq(n, 1 / SR) / 900) ** 2), n)
+    drone = (np.sin(2 * np.pi * 110 * t) + 0.6 * np.sin(2 * np.pi * 164.8 * t + 1.0)) * (
+        0.6 + 0.4 * lfo
+    )
+    air = np.fft.irfft(
+        np.fft.rfft(rng.standard_normal(n)) / (1 + (np.fft.rfftfreq(n, 1 / SR) / 900) ** 2), n
+    )
     air /= np.max(np.abs(air))
     fade = np.clip(t / 1.5, 0, 1) * np.clip((t[-1] - t) / 2.0, 0, 1)
     return (drone * 0.5 + air * 0.35) * fade * db(-36)
@@ -194,7 +223,7 @@ def build(out: Path) -> None:
     left = mix
     right = np.concatenate([mix[:d] * 0.0, mix[:-d]]) * 0.35 + mix * 0.65
     stereo = np.stack([left, right], axis=1)
-    stereo *= db(-3) / np.max(np.abs(stereo))           # peak at -3 dBFS
+    stereo *= db(-3) / np.max(np.abs(stereo))  # peak at -3 dBFS
     end_fade = np.clip((n - np.arange(n)) / (0.6 * SR), 0, 1)
     stereo *= end_fade[:, None]
     out.parent.mkdir(parents=True, exist_ok=True)

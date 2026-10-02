@@ -33,10 +33,21 @@ def main(src: str) -> None:
         d.mkdir(parents=True)
         subprocess.run(
             [
-                "ffmpeg", "-v", "error", "-y", "-ss", str(start), "-t", str(end - start),
-                "-i", src,
-                "-vf", f"fps={FPS},scale=iw*2:ih*2:flags=lanczos,unsharp=5:5:0.6",
-                "-q:v", "2", str(d / "%04d.jpg"),
+                "ffmpeg",
+                "-v",
+                "error",
+                "-y",
+                "-ss",
+                str(start),
+                "-t",
+                str(end - start),
+                "-i",
+                src,
+                "-vf",
+                f"fps={FPS},scale=iw*2:ih*2:flags=lanczos,unsharp=5:5:0.6",
+                "-q:v",
+                "2",
+                str(d / "%04d.jpg"),
             ],
             check=True,
         )
