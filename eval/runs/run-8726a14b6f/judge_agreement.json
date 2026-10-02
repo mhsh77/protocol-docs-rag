@@ -1,0 +1,27 @@
+{
+  "n": 20,
+  "agreement": 0.8,
+  "kappa": 0.699248120300752,
+  "disagreements": [
+    [
+      "baseline_dense/q040",
+      1,
+      0
+    ],
+    [
+      "hybrid/q056",
+      1,
+      0
+    ],
+    [
+      "hybrid/q057",
+      1,
+      0
+    ],
+    [
+      "baseline_dense/q005",
+      1,
+      0
+    ]
+  ]
+}

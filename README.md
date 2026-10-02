@@ -205,7 +205,7 @@ through daily quota resets and resumes.
   do not explain X" as an unsupported claim (q005), and it judges faithfulness strictly against
   the retrieved text, so a mathematically correct answer that departs from imprecise docs
   counts as unsupported (q081). Judge agreement with a spot check of 20 decisions:
-  <!-- judge-agreement -->pending<!-- /judge-agreement -->.
+  <!-- judge-agreement -->**80% (16/20), Cohen's kappa 0.70** against a blind regrade of 20 decisions stratified over the judge's grades. The regrade was done by an AI assistant (Claude), not a human, because no domain expert was available. All 4 disagreements were the judge giving 0 where the regrade gave partial credit, so correctness is if anything understated; the judge was also inconsistent on near-identical answers (q057). Sheet and result: [judge_spot_check.md](eval/runs/run-8726a14b6f/judge_spot_check.md), [judge_agreement.json](eval/runs/run-8726a14b6f/judge_agreement.json)<!-- /judge-agreement -->.
 - **Serving differences.** The reported run used Cerebras-hosted models; the live bot uses the
   same generator model on Groq. Same weights and prompt, but providers can differ slightly.
 - **Retrieval weak spot.** Contract-address lookups across near-identical per-chain deployment
