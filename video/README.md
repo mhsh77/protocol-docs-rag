@@ -32,13 +32,28 @@ uv run --with playwright --with numpy --with pillow python video/render.py --sti
 uv run --with playwright --with numpy --with pillow python video/render.py --out video/build/showcase.mp4 --audio video/build/sfx.wav
 ```
 
+### Voice-over (optional second cut)
+
+An AI voice (Orpheus `troy`, served free by Groq; accept the model's terms once in the Groq
+console) reads five short lines timed to the scenes. The picture is reused; a small
+"Voice: AI-generated" line is added to the end card, and the effects are ducked under the voice.
+
+```bash
+uv run --with openai python video/voiceover.py --voice troy   # lines + fit check against each scene
+ffmpeg -i video/build/showcase_draft.mp4 -vf "hqdn3d=0:0:8:8,drawtext=fontfile=video/fonts/Inter-Variable.ttf:text='Voice\: AI-generated (Orpheus TTS)':fontsize=21:fontcolor=0x625c53:x=(w-text_w)/2:y=742:alpha='if(lt(t,44.4),0,min(1,(t-44.4)/0.6))'" -an -c:v libx264 -crf 18 video/build/showcase_vo_picture.mp4
+uv run --with openai python video/voiceover.py --voice troy --video video/build/showcase_vo_picture.mp4 --sfx video/build/sfx.wav --out video/build/showcase_vo.mp4
+```
+
+Each generated line was checked by transcribing it back with Whisper (all five matched the
+script), and the final mix was transcribed with timestamps to confirm every line lands on its scene.
+
 Rendering uses the locally installed Chrome (`channel="chrome"`). On a 4-core laptop the full
 film (1,416 frames × 4 shutter samples) took about 45 minutes on 3 parallel browsers.
 
 ## Credits and licences
 
 - Fonts (SIL Open Font License, licence files in `fonts/`): Instrument Serif, Inter, JetBrains Mono.
-- Sound: synthesised in `sfx.py`; no samples or music.
+- Sound: synthesised in `sfx.py`; no samples or music. Voice-over (second cut): AI-generated with Orpheus TTS on Groq, disclosed on the end card.
 - Text-reveal timings follow the MIT-licensed
   [kinetic-typography skill](https://github.com/iart-ai/kinetic-typography-skills) (masked line
   reveals, expo-out easing, 30–70 ms staggers). No code from non-commercially licensed sources is used.
