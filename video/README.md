@@ -1,6 +1,6 @@
 # Showcase film
 
-A ~43 s kinetic-typography film (1920×1080, 30 fps) for LinkedIn, X and the GitHub README.
+A ~47 s kinetic-typography film (1920×1080, 30 fps) for LinkedIn, X and the GitHub README.
 The piece is code: one HTML composition where every frame is a pure function of time, rendered
 frame by frame in headless Chrome with a real shutter-based motion blur, then encoded with ffmpeg.
 
@@ -8,12 +8,13 @@ frame by frame in headless Chrome with a real shutter-based motion blur, then en
 
 | Time | Beat | Source of the content |
 |---|---|---|
-| 0–10 s | A question the docs can't answer: a naive RAG setup invents an answer, this assistant declines | Verbatim from eval record `q108` (`naive_rag` vs `hybrid_rerank`), run `run-8726a14b6f` |
-| 10–13 s | "It knows what it doesn't know." | |
-| 13–16 s | "How many hooks can a Uniswap v4 pool have?" → cited answer `[1]` | The live bot's answer |
-| 16–27 s | The `[1]` opens into the real Telegram session: answer → tap the source → the docs page lands on the quoted sentence | Screen recording of the live bot (not committed) |
-| 27–37 s | Measured, not claimed: 80 held-out questions, 23 unanswerable, 23/23 declined, unsupported claims 5.0% (naive RAG) vs 0.8% | `eval/runs/run-8726a14b6f/results.json` |
-| 37–43 s | Hybrid search · Reranking · Cited answers · Honest refusals → end card | |
+| 0–4 s | Title opening, readable from frame 0 (LinkedIn autoplay and thumbnail): "A RAG assistant for the Uniswap docs, that cites every answer [1] and won't guess" + what is inside | |
+| 4–14 s | A question the docs can't answer: a naive RAG setup invents an answer, this assistant declines | Verbatim from eval record `q108` (`naive_rag` vs `hybrid_rerank`), run `run-8726a14b6f` |
+| 14–17 s | "It knows what it doesn't know." | |
+| 17–20 s | "How many hooks can a Uniswap v4 pool have?" → cited answer `[1]` | The live bot's answer |
+| 20–31 s | The `[1]` opens into the real Telegram session: answer → tap the source → the docs page lands on the quoted sentence | Screen recording of the live bot (not committed) |
+| 31–41 s | Measured, not claimed: 80 held-out questions, 23 unanswerable, 23/23 declined, unsupported claims 5.0% (naive RAG) vs 0.8% | `eval/runs/run-8726a14b6f/results.json` |
+| 41–47 s | Hybrid search · Reranking · Cited answers · Honest refusals → end card | |
 
 The `[1]` citation chip is the thread through the film: it appears in the answer, grows into the
 source, becomes the mark of the evidence section, and carries into the end card.
@@ -32,7 +33,7 @@ uv run --with playwright --with numpy --with pillow python video/render.py --out
 ```
 
 Rendering uses the locally installed Chrome (`channel="chrome"`). On a 4-core laptop the full
-film (1,290 frames × 4 shutter samples) takes roughly 10–15 minutes.
+film (1,416 frames × 4 shutter samples) took about 45 minutes on 3 parallel browsers.
 
 ## Credits and licences
 

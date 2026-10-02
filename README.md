@@ -11,7 +11,7 @@ protocol's docs by changing one config file.
 [![Every answer cites its source: the [1] in a Telegram answer opens the exact docs sentence it quoted](docs/media/showcase-preview.gif)](docs/media/showcase.mp4)
 
 **Live demo:** [@Uniswapdocsqabot](https://t.me/Uniswapdocsqabot) on Telegram ·
-**43-second film:** [docs/media/showcase.mp4](docs/media/showcase.mp4) ·
+**47-second film:** [docs/media/showcase.mp4](docs/media/showcase.mp4) ·
 **Walkthrough:** [docs/demo-script.md](docs/demo-script.md)
 
 ## Results

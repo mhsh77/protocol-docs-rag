@@ -46,7 +46,7 @@
 <div id="frame">
   <div id="stage">
     <!-- S1–S3: same question, naive vs grounded -->
-    <div id="q1tag" class="abs tag center" style="top:268px">a question the docs can't answer</div>
+    <div id="q1tag" class="abs tag center" style="top:268px">watch · a question the docs can't answer</div>
     <div id="q1" class="abs mono center" style="top:314px;font-size:36px;line-height:1.45;color:var(--ink)">
       <div style="width:1400px;margin:0 auto;text-align:center"><span id="q1text"></span><span id="q1caret" class="caret"></span><span id="q1rest" style="color:transparent"></span></div>
     </div>
@@ -130,6 +130,16 @@
     <div id="lockU" style="margin-top:40px;font-size:22px;color:#625c53">Unofficial project · not affiliated with Uniswap Labs</div>
   </div>
 
+  <!-- S0: title opening, readable from frame 0 (LinkedIn autoplay + thumbnail) -->
+  <div id="intro" class="abs center" style="top:318px">
+    <div id="introTag" class="tag" style="font-size:24px;letter-spacing:0.22em;color:var(--amber)">RAG · protocol docs</div>
+    <div class="serif" style="margin-top:34px;font-size:96px;line-height:1.08">
+      <span class="mask"><span id="introA">A RAG assistant for the Uniswap docs</span></span>
+      <span class="mask"><span id="introB"><i style="color:var(--amber)">that cites every answer <span id="introChip" class="chip" style="font-size:0.5em;vertical-align:0.35em">[1]</span> and won’t guess.</i></span></span>
+    </div>
+    <div id="introSub" class="mono" style="margin-top:46px;font-size:27px;color:var(--mute)">hybrid search · reranking · enforced citations · evaluated on 80 held-out questions</div>
+  </div>
+
   <div id="vignette"></div>
   <canvas id="grain" width="960" height="540" style="width:1920px;height:1080px"></canvas>
   <div id="black" class="abs" style="inset:0;background:#000;opacity:0"></div>
@@ -144,7 +154,9 @@ const Q2 = "How many hooks can a Uniswap v4 pool have?";
 const A2 = "Every Uniswap v4 pool can have one hook";
 const STEPS = ["1 · the answer, with its citation", "2 · tap the source", "3 · land on the sentence it quoted"];
 const HITS = [["Hybrid search.", 1104 / 30], ["Reranking.", 1117 / 30], ["Cited answers.", 1130 / 30], ["Honest refusals.", 1143 / 30]];
-const DURATION = 43.0;
+const MAIN = 43.0;      // the demo film
+const INTRO = 4.2;      // title opening in front of it
+const DURATION = INTRO + MAIN;
 
 // ---------- time helpers ----------
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
@@ -252,7 +264,7 @@ function drawCard(t) {
 const gctx = $("grain").getContext("2d");
 const gimg = gctx.createImageData(960, 540);
 function grain(frameNo) {
-  let s = (frameNo * 2654435761) >>> 0;
+  let s = ((frameNo + 1) * 2654435761 + 0x9e3779b9) >>> 0 || 1;   // never 0: xorshift would stay black
   const d = gimg.data;
   for (let i = 0; i < d.length; i += 4) {
     s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0;
@@ -263,7 +275,7 @@ function grain(frameNo) {
 }
 
 // ---------- the timeline ----------
-function seek(t) {
+function seekMain(t) {
   // S1: type the first question
   const q1on = env(t, 0.15, 10.4, .3, .45);
   $("q1").style.opacity = q1on; $("q1tag").style.opacity = q1on * E.cubicOut(seg(t, .15, .8));
@@ -447,8 +459,29 @@ function seek(t) {
   $("lockU").style.opacity = lu;
 
   // fade from and to black
-  $("black").style.opacity = Math.max(1 - E.cubicOut(seg(t, 0, .35)), E.cubicIn(seg(t, DURATION - .6, DURATION)));
-  grain(Math.floor(t * 30));
+  $("black").style.opacity = E.cubicIn(seg(t, MAIN - .6, MAIN));
+}
+
+function seekIntro(T) {
+  show($("intro"), T < INTRO);
+  if (T >= INTRO) return;
+  const drift = 1 + 0.018 * E.sineInOut(seg(T, 0, INTRO));       // slow push, so frame 0 is alive
+  $("intro").style.transform = `scale(${drift})`;
+  // line 1 and the tag are on screen at frame 0 (thumbnail); line 2 arrives as the hook
+  $("introA").style.transform = `translateY(${T < 3.45 ? 0 : -110 * E.cubicIn(seg(T, 3.45, 3.95))}%)`;
+  $("introB").style.transform = `translateY(${rise(T, 0.45, 3.95, 0, .8, .5)}%)`;
+  const ck = E.backOut(seg(T, 1.15, 1.55));
+  $("introChip").style.transform = `scale(${T < 1.15 ? 0.001 : ck})`;
+  $("introTag").style.opacity = 1 - E.cubicIn(seg(T, 3.4, 3.8));
+  const sk = E.expoOut(seg(T, 1.75, 2.45)) * (1 - E.cubicIn(seg(T, 3.35, 3.75)));
+  $("introSub").style.opacity = sk;
+  $("introSub").style.transform = `translateY(${(1 - E.expoOut(seg(T, 1.75, 2.45))) * 14}px)`;
+}
+
+function seek(T) {
+  seekIntro(T);
+  seekMain(T - INTRO);
+  grain(Math.floor(T * 30));
 }
 
 // ---------- harness ----------
@@ -456,7 +489,7 @@ window.__duration = DURATION;
 window.__seek = seek;
 window.__ready = false;
 // sound cues for video/sfx.py: [time, kind]
-window.__events = () => {
+function mainEvents() {
   const ev = [];
   for (let i = 0; i < Q1.length; i += 3) ev.push([0.45 + 3.0 * i / Q1.length, "key"]);
   ev.push([3.85, "pop"], [5.55, "flag"], [7.0, "swoosh"], [7.45, "pop"], [8.75, "confirm"],
@@ -468,7 +501,11 @@ window.__events = () => {
   for (const [, a] of HITS) ev.push([a, "hit"]);
   ev.push([38.5, "resolve"]);
   return ev;
-};
+}
+window.__events = () => [
+  [0.0, "swell"], [1.15, "chip"], [1.75, "bar"], [3.45, "swoosh_soft"],
+  ...mainEvents().map(([t, k]) => [t + INTRO, k]),
+];
 const ready = Promise.all([document.fonts.ready, new Promise(res => {
   const check = () => pending === 0 ? res() : setTimeout(check, 50); check();
 })]);
